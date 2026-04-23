@@ -1,22 +1,31 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: PROMATCH API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: session
+  - name: portfolio
+  - name: topics
+  - name: recommendations
+  - name: calls
+  - name: teams
+  - name: projects
+  - name: tasks
+  - name: knowledge
+  - name: notifications
+  - name: admin
+  - name: analytics
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +33,1143 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /session/me:
+    get:
+      operationId: getSession
+      tags: [session]
+      summary: Get current user (demo)
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+    put:
+      operationId: switchRole
+      tags: [session]
+      summary: Switch active demo role
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [role]
+              properties:
+                role:
+                  $ref: "#/components/schemas/UserRole"
+      responses:
+        "200":
+          description: Updated session
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /skills:
+    get:
+      operationId: listSkills
+      tags: [portfolio]
+      summary: List predefined skills (categories)
+      responses:
+        "200":
+          description: Skills
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Skill"
+
+  /portfolios/{userId}:
+    get:
+      operationId: getPortfolio
+      tags: [portfolio]
+      summary: Get a student's digital portfolio
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Portfolio
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Portfolio"
+    put:
+      operationId: updatePortfolio
+      tags: [portfolio]
+      summary: Update portfolio (skills, interests, bio)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PortfolioUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Portfolio"
+
+  /topics:
+    get:
+      operationId: listTopics
+      tags: [topics]
+      summary: Search and filter topics
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: domain
+          in: query
+          schema: { type: string }
+        - name: difficulty
+          in: query
+          schema: { type: string }
+        - name: source
+          in: query
+          schema: { type: string }
+        - name: sort
+          in: query
+          schema: { type: string, enum: [relevance, recent, popular, score] }
+      responses:
+        "200":
+          description: Topic list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Topic"
+                  total: { type: integer }
+    post:
+      operationId: createTopic
+      tags: [topics]
+      summary: Submit a topic proposal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TopicCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+
+  /topics/{topicId}:
+    get:
+      operationId: getTopic
+      tags: [topics]
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Topic
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Topic"
+
+  /topics/recommend:
+    get:
+      operationId: recommendTopics
+      tags: [recommendations]
+      summary: Personalized topic recommendations (Hybrid Score)
+      parameters:
+        - name: domain
+          in: query
+          schema: { type: string }
+        - name: difficulty
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Ranked recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TopicRecommendation"
+
+  /topics/ai-generate:
+    post:
+      operationId: aiGenerateTopics
+      tags: [recommendations]
+      summary: Generate personalized topics with AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                interests:
+                  type: array
+                  items: { type: string }
+                domain: { type: string }
+      responses:
+        "200":
+          description: AI topics
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, remainingQuota]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Topic"
+                  remainingQuota: { type: integer }
+
+  /topic-trends:
+    get:
+      operationId: getTopicTrends
+      tags: [topics]
+      summary: Trending topics from external market sources
+      responses:
+        "200":
+          description: Trends
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TrendItem"
+
+  /calls:
+    get:
+      operationId: listCalls
+      tags: [calls]
+      summary: Marketplace - list call for projects
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Calls
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CallForProject"
+    post:
+      operationId: createCall
+      tags: [calls]
+      summary: Enterprise creates a call for project
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CallCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallForProject"
+
+  /calls/{callId}:
+    get:
+      operationId: getCall
+      tags: [calls]
+      parameters:
+        - name: callId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Call
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallForProject"
+
+  /calls/{callId}/apply:
+    post:
+      operationId: applyToCall
+      tags: [calls]
+      parameters:
+        - name: callId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message: { type: string }
+      responses:
+        "200":
+          description: Applied
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CallApplication"
+
+  /teams/recommend:
+    get:
+      operationId: recommendTeammates
+      tags: [teams]
+      summary: Recommend teammates by skill complementarity
+      parameters:
+        - name: topicId
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Teammate recommendations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeammateRecommendation"
+
+  /projects:
+    get:
+      operationId: listProjects
+      tags: [projects]
+      summary: List projects accessible to current user
+      responses:
+        "200":
+          description: Projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Project"
+    post:
+      operationId: createProject
+      tags: [projects]
+      summary: Create project workspace from a topic
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
+  /projects/{projectId}:
+    get:
+      operationId: getProject
+      tags: [projects]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Project
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectDetail"
+
+  /projects/{projectId}/tasks:
+    get:
+      operationId: listTasks
+      tags: [tasks]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Tasks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Task"
+    post:
+      operationId: createTask
+      tags: [tasks]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /tasks/{taskId}:
+    put:
+      operationId: updateTask
+      tags: [tasks]
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaskUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Task"
+
+  /projects/{projectId}/contributions:
+    get:
+      operationId: getContributions
+      tags: [projects]
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Member contributions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContributionMetric"
+
+  /instructor/dashboard:
+    get:
+      operationId: getInstructorDashboard
+      tags: [projects]
+      summary: Instructor dashboard summary
+      responses:
+        "200":
+          description: Dashboard
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/InstructorDashboard"
+
+  /knowledge:
+    get:
+      operationId: listKnowledge
+      tags: [knowledge]
+      summary: Browse knowledge repository
+      parameters:
+        - name: q
+          in: query
+          schema: { type: string }
+        - name: domain
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Archived projects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArchivedProject"
+
+  /knowledge/{archiveId}:
+    get:
+      operationId: getKnowledge
+      tags: [knowledge]
+      parameters:
+        - name: archiveId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Archive
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArchivedProject"
+
+  /notifications:
+    get:
+      operationId: listNotifications
+      tags: [notifications]
+      responses:
+        "200":
+          description: Notifications
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Notification"
+
+  /notifications/{notificationId}/read:
+    post:
+      operationId: markNotificationRead
+      tags: [notifications]
+      parameters:
+        - name: notificationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Admin dashboard statistics
+      responses:
+        "200":
+          description: Stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/users:
+    get:
+      operationId: listUsers
+      tags: [admin]
+      parameters:
+        - name: status
+          in: query
+          schema: { type: string }
+      responses:
+        "200":
+          description: Users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/User"
+
+  /admin/users/{userId}/status:
+    put:
+      operationId: updateUserStatus
+      tags: [admin]
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [active, suspended, pending] }
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /admin/moderation:
+    get:
+      operationId: listModeration
+      tags: [admin]
+      summary: Pending content moderation queue
+      responses:
+        "200":
+          description: Reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ModerationItem"
+
+  /admin/moderation/{reportId}:
+    put:
+      operationId: resolveModeration
+      tags: [admin]
+      parameters:
+        - name: reportId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [action]
+              properties:
+                action: { type: string, enum: [approve, hide, delete] }
+                note: { type: string }
+      responses:
+        "200":
+          description: Resolved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ModerationItem"
+
+  /analytics/overview:
+    get:
+      operationId: getAnalyticsOverview
+      tags: [analytics]
+      summary: Trending domains, skills, and project outcomes
+      responses:
+        "200":
+          description: Analytics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AnalyticsOverview"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
-        status:
-          type: string
-      required:
-        - status
+        status: { type: string }
 
+    UserRole:
+      type: string
+      enum: [student, instructor, enterprise, alumni, admin]
+
+    User:
+      type: object
+      required: [id, name, email, role, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        email: { type: string }
+        role: { $ref: "#/components/schemas/UserRole" }
+        status: { type: string, enum: [active, suspended, pending] }
+        avatarUrl: { type: string, nullable: true }
+        organization: { type: string, nullable: true }
+        createdAt: { type: string }
+
+    Skill:
+      type: object
+      required: [id, name, domain]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        domain: { type: string }
+
+    PortfolioSkill:
+      type: object
+      required: [skillId, name, level]
+      properties:
+        skillId: { type: string }
+        name: { type: string }
+        level: { type: string, enum: [beginner, intermediate, advanced] }
+
+    Portfolio:
+      type: object
+      required: [userId, name, bio, interests, skills, completedProjects, contributionScore]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        avatarUrl: { type: string, nullable: true }
+        bio: { type: string }
+        major: { type: string, nullable: true }
+        year: { type: integer, nullable: true }
+        interests:
+          type: array
+          items: { type: string }
+        skills:
+          type: array
+          items: { $ref: "#/components/schemas/PortfolioSkill" }
+        certifications:
+          type: array
+          items: { type: string }
+        completedProjects: { type: integer }
+        contributionScore: { type: number }
+        publicVisible: { type: boolean }
+        portfolioUrl: { type: string, nullable: true }
+
+    PortfolioUpdate:
+      type: object
+      properties:
+        bio: { type: string }
+        major: { type: string }
+        year: { type: integer }
+        interests:
+          type: array
+          items: { type: string }
+        skills:
+          type: array
+          items: { $ref: "#/components/schemas/PortfolioSkill" }
+        publicVisible: { type: boolean }
+
+    TopicSource:
+      type: string
+      enum: [instructor, enterprise, alumni, student, ai, knowledge, trend]
+
+    Topic:
+      type: object
+      required: [id, title, problemDescription, objectives, technologies, domain, difficulty, source, requiredSkills, teamSize, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        problemDescription: { type: string }
+        objectives:
+          type: array
+          items: { type: string }
+        technologies:
+          type: array
+          items: { type: string }
+        domain: { type: string }
+        difficulty: { type: string, enum: [beginner, intermediate, advanced] }
+        source: { $ref: "#/components/schemas/TopicSource" }
+        sourceLabel: { type: string, nullable: true }
+        requiredSkills:
+          type: array
+          items: { type: string }
+        teamSize: { type: integer }
+        feasibility: { type: string, nullable: true }
+        popularity: { type: integer }
+        createdAt: { type: string }
+        completeness: { type: number }
+
+    TopicCreate:
+      type: object
+      required: [title, problemDescription, objectives, technologies, domain, difficulty, requiredSkills, teamSize]
+      properties:
+        title: { type: string }
+        problemDescription: { type: string }
+        objectives:
+          type: array
+          items: { type: string }
+        technologies:
+          type: array
+          items: { type: string }
+        domain: { type: string }
+        difficulty: { type: string, enum: [beginner, intermediate, advanced] }
+        requiredSkills:
+          type: array
+          items: { type: string }
+        teamSize: { type: integer }
+
+    TopicRecommendation:
+      type: object
+      required: [topic, hybridScore, skillMatchScore, interestAlignmentScore, projectQualityScore, matchingSkills, missingSkills]
+      properties:
+        topic: { $ref: "#/components/schemas/Topic" }
+        hybridScore: { type: number }
+        skillMatchScore: { type: number }
+        interestAlignmentScore: { type: number }
+        projectQualityScore: { type: number }
+        matchingSkills:
+          type: array
+          items: { type: string }
+        missingSkills:
+          type: array
+          items: { type: string }
+        difficultyEstimate: { type: string }
+
+    TrendItem:
+      type: object
+      required: [id, title, source, score, tags]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        source: { type: string }
+        score: { type: number }
+        tags:
+          type: array
+          items: { type: string }
+        url: { type: string, nullable: true }
+        cached: { type: boolean }
+
+    CallForProject:
+      type: object
+      required: [id, title, enterpriseName, problemDescription, requirements, timeline, benefits, status, postedAt, applicationCount]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        enterpriseName: { type: string }
+        enterpriseLogo: { type: string, nullable: true }
+        problemDescription: { type: string }
+        requirements:
+          type: array
+          items: { type: string }
+        timeline: { type: string }
+        benefits: { type: string }
+        budget: { type: string, nullable: true }
+        status: { type: string, enum: [pending, published, closed] }
+        postedAt: { type: string }
+        deadline: { type: string, nullable: true }
+        applicationCount: { type: integer }
+        skillTags:
+          type: array
+          items: { type: string }
+
+    CallCreate:
+      type: object
+      required: [title, problemDescription, requirements, timeline, benefits]
+      properties:
+        title: { type: string }
+        problemDescription: { type: string }
+        requirements:
+          type: array
+          items: { type: string }
+        timeline: { type: string }
+        benefits: { type: string }
+        budget: { type: string }
+        deadline: { type: string }
+        skillTags:
+          type: array
+          items: { type: string }
+
+    CallApplication:
+      type: object
+      required: [id, callId, applicantName, message, status, appliedAt]
+      properties:
+        id: { type: string }
+        callId: { type: string }
+        applicantName: { type: string }
+        message: { type: string }
+        status: { type: string }
+        appliedAt: { type: string }
+
+    TeammateRecommendation:
+      type: object
+      required: [user, complementarityScore, sharedSkills, complementarySkills, suggestedRole]
+      properties:
+        user: { $ref: "#/components/schemas/User" }
+        complementarityScore: { type: number }
+        sharedSkills:
+          type: array
+          items: { type: string }
+        complementarySkills:
+          type: array
+          items: { type: string }
+        suggestedRole: { type: string }
+        gapAnalysis: { type: string }
+
+    Project:
+      type: object
+      required: [id, name, topicTitle, status, progress, memberCount, instructorName, dueDate, milestoneCount, completedMilestones]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        topicTitle: { type: string }
+        status: { type: string, enum: [planning, in_progress, review, completed, at_risk] }
+        progress: { type: number }
+        memberCount: { type: integer }
+        instructorName: { type: string }
+        dueDate: { type: string }
+        milestoneCount: { type: integer }
+        completedMilestones: { type: integer }
+
+    ProjectMember:
+      type: object
+      required: [userId, name, role, contributionPct]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        avatarUrl: { type: string, nullable: true }
+        role: { type: string }
+        contributionPct: { type: number }
+
+    Milestone:
+      type: object
+      required: [id, name, dueDate, status]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        dueDate: { type: string }
+        status: { type: string, enum: [pending, in_progress, completed, overdue] }
+        feedback: { type: string, nullable: true }
+
+    ProjectDetail:
+      type: object
+      required: [project, members, milestones, recentActivity]
+      properties:
+        project: { $ref: "#/components/schemas/Project" }
+        members:
+          type: array
+          items: { $ref: "#/components/schemas/ProjectMember" }
+        milestones:
+          type: array
+          items: { $ref: "#/components/schemas/Milestone" }
+        description: { type: string }
+        recentActivity:
+          type: array
+          items:
+            type: object
+            required: [id, message, timestamp]
+            properties:
+              id: { type: string }
+              message: { type: string }
+              timestamp: { type: string }
+              actor: { type: string, nullable: true }
+
+    ProjectCreate:
+      type: object
+      required: [name, topicId, memberIds]
+      properties:
+        name: { type: string }
+        topicId: { type: string }
+        instructorId: { type: string }
+        memberIds:
+          type: array
+          items: { type: string }
+        dueDate: { type: string }
+
+    Task:
+      type: object
+      required: [id, projectId, title, status, assigneeName, createdAt]
+      properties:
+        id: { type: string }
+        projectId: { type: string }
+        title: { type: string }
+        description: { type: string, nullable: true }
+        status: { type: string, enum: [todo, in_progress, review, done] }
+        assigneeId: { type: string, nullable: true }
+        assigneeName: { type: string }
+        dueDate: { type: string, nullable: true }
+        createdAt: { type: string }
+
+    TaskCreate:
+      type: object
+      required: [title, status]
+      properties:
+        title: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [todo, in_progress, review, done] }
+        assigneeId: { type: string }
+        dueDate: { type: string }
+
+    TaskUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        status: { type: string, enum: [todo, in_progress, review, done] }
+        assigneeId: { type: string }
+        dueDate: { type: string }
+
+    ContributionMetric:
+      type: object
+      required: [userId, name, tasksCompleted, commits, documents, meetingsAttended, percentage]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        avatarUrl: { type: string, nullable: true }
+        tasksCompleted: { type: integer }
+        commits: { type: integer }
+        documents: { type: integer }
+        meetingsAttended: { type: integer }
+        percentage: { type: number }
+        peerRating: { type: number }
+
+    InstructorDashboard:
+      type: object
+      required: [totalProjects, atRiskCount, upcomingDeadlines, projects]
+      properties:
+        totalProjects: { type: integer }
+        atRiskCount: { type: integer }
+        completedThisSemester: { type: integer }
+        upcomingDeadlines:
+          type: array
+          items:
+            type: object
+            required: [projectId, projectName, milestone, dueDate]
+            properties:
+              projectId: { type: string }
+              projectName: { type: string }
+              milestone: { type: string }
+              dueDate: { type: string }
+        projects:
+          type: array
+          items: { $ref: "#/components/schemas/Project" }
+
+    ArchivedProject:
+      type: object
+      required: [id, title, year, domain, summary, technologies, teamMembers, viewCount, downloadCount]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        year: { type: integer }
+        domain: { type: string }
+        summary: { type: string }
+        technologies:
+          type: array
+          items: { type: string }
+        teamMembers:
+          type: array
+          items: { type: string }
+        instructorName: { type: string, nullable: true }
+        rating: { type: number }
+        viewCount: { type: integer }
+        downloadCount: { type: integer }
+        demoUrl: { type: string, nullable: true }
+        coverUrl: { type: string, nullable: true }
+        keywords:
+          type: array
+          items: { type: string }
+        featured: { type: boolean }
+
+    Notification:
+      type: object
+      required: [id, title, body, type, read, createdAt]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        body: { type: string }
+        type: { type: string, enum: [milestone, call, team, moderation, system] }
+        read: { type: boolean }
+        createdAt: { type: string }
+        link: { type: string, nullable: true }
+
+    AdminStats:
+      type: object
+      required: [totalUsers, activeProjects, totalTopics, dailyActiveUsers, pendingApprovals, openReports, errorRate, usersByRole, projectsByStatus, recentActivity]
+      properties:
+        totalUsers: { type: integer }
+        activeProjects: { type: integer }
+        totalTopics: { type: integer }
+        dailyActiveUsers: { type: integer }
+        pendingApprovals: { type: integer }
+        openReports: { type: integer }
+        errorRate: { type: number }
+        usersByRole:
+          type: array
+          items:
+            type: object
+            required: [role, count]
+            properties:
+              role: { type: string }
+              count: { type: integer }
+        projectsByStatus:
+          type: array
+          items:
+            type: object
+            required: [status, count]
+            properties:
+              status: { type: string }
+              count: { type: integer }
+        recentActivity:
+          type: array
+          items:
+            type: object
+            required: [id, event, timestamp]
+            properties:
+              id: { type: string }
+              event: { type: string }
+              timestamp: { type: string }
+
+    ModerationItem:
+      type: object
+      required: [id, contentType, contentTitle, reason, reportedBy, reportedAt, status]
+      properties:
+        id: { type: string }
+        contentType: { type: string, enum: [topic, project, comment, call] }
+        contentTitle: { type: string }
+        excerpt: { type: string }
+        reason: { type: string }
+        reportedBy: { type: string }
+        reportedAt: { type: string }
+        status: { type: string, enum: [pending, resolved, dismissed] }
+
+    AnalyticsOverview:
+      type: object
+      required: [popularDomains, trendingSkills, projectSuccessRate, skillGaps, semesterTrend]
+      properties:
+        popularDomains:
+          type: array
+          items:
+            type: object
+            required: [domain, count]
+            properties:
+              domain: { type: string }
+              count: { type: integer }
+        trendingSkills:
+          type: array
+          items:
+            type: object
+            required: [skill, growth]
+            properties:
+              skill: { type: string }
+              growth: { type: number }
+        projectSuccessRate: { type: number }
+        skillGaps:
+          type: array
+          items:
+            type: object
+            required: [skill, gap]
+            properties:
+              skill: { type: string }
+              gap: { type: number }
+        semesterTrend:
+          type: array
+          items:
+            type: object
+            required: [period, projects, success]
+            properties:
+              period: { type: string }
+              projects: { type: integer }
+              success: { type: number }
