@@ -19,7 +19,9 @@ import {
   Sparkles, 
   TrendingUp, 
   Users,
-  FolderKanban
+  FolderKanban,
+  UserCircle,
+  Building2
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -88,12 +90,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           { href: "/instructor", label: "Quản lý lớp", icon: Users },
           { href: "/analytics", label: "Phân tích & Xu hướng", icon: ChartBar },
           { href: "/knowledge", label: "Kho tri thức", icon: BookOpen },
+          { href: "/portfolio", label: "Hồ sơ giảng viên", icon: UserCircle },
         ];
       case "enterprise":
         return [
           { href: "/", label: "Bảng điều khiển", icon: LayoutDashboard },
           { href: "/marketplace", label: "Tất cả đặt hàng", icon: Briefcase },
           { href: "/marketplace/new", label: "Tạo đặt hàng mới", icon: MessageSquare },
+          { href: "/portfolio", label: "Hồ sơ doanh nghiệp", icon: Building2 },
         ];
       case "admin":
         return [
