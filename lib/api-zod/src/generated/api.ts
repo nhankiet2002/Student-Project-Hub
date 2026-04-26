@@ -65,6 +65,9 @@ export const GetPortfolioParams = zod.object({
 
 export const GetPortfolioResponse = zod.object({
   userId: zod.string(),
+  role: zod
+    .enum(["student", "instructor", "enterprise", "alumni", "admin"])
+    .optional(),
   name: zod.string(),
   avatarUrl: zod.string().nullish(),
   bio: zod.string(),
@@ -98,6 +101,57 @@ export const GetPortfolioResponse = zod.object({
         archiveId: zod.string().nullish(),
       }),
     )
+    .optional(),
+  instructorProfile: zod
+    .object({
+      title: zod.string().nullish(),
+      department: zod.string().nullish(),
+      yearsTeaching: zod.number().nullish(),
+      mentoringStatement: zod.string().nullish(),
+      officeHours: zod.string().nullish(),
+      contactEmail: zod.string().nullish(),
+      expertise: zod.array(zod.string()).optional(),
+      focusDomains: zod.array(zod.string()).optional(),
+      mentoredTeamCount: zod.number().optional(),
+      advisedTopicCount: zod.number().optional(),
+      avgTeamRating: zod.number().nullish(),
+      publications: zod
+        .array(
+          zod.object({
+            id: zod.string(),
+            title: zod.string(),
+            venue: zod.string(),
+            year: zod.number(),
+            url: zod.string().nullish(),
+          }),
+        )
+        .optional(),
+      availableSlots: zod.number().nullish(),
+    })
+    .optional(),
+  enterpriseProfile: zod
+    .object({
+      industry: zod.string().nullish(),
+      size: zod.string().nullish(),
+      foundedYear: zod.number().nullish(),
+      headquarters: zod.string().nullish(),
+      website: zod.string().nullish(),
+      about: zod.string().nullish(),
+      partnerSince: zod.number().nullish(),
+      sponsoredBriefCount: zod.number().optional(),
+      adoptedProjectCount: zod.number().optional(),
+      placedStudentCount: zod.number().optional(),
+      focusAreas: zod.array(zod.string()).optional(),
+      offeredBenefits: zod.array(zod.string()).optional(),
+      contactPerson: zod
+        .object({
+          name: zod.string(),
+          role: zod.string(),
+          email: zod.string(),
+          phone: zod.string().nullish(),
+        })
+        .optional(),
+    })
     .optional(),
 });
 
@@ -123,10 +177,64 @@ export const UpdatePortfolioBody = zod.object({
     )
     .optional(),
   publicVisible: zod.boolean().optional(),
+  instructorProfile: zod
+    .object({
+      title: zod.string().nullish(),
+      department: zod.string().nullish(),
+      yearsTeaching: zod.number().nullish(),
+      mentoringStatement: zod.string().nullish(),
+      officeHours: zod.string().nullish(),
+      contactEmail: zod.string().nullish(),
+      expertise: zod.array(zod.string()).optional(),
+      focusDomains: zod.array(zod.string()).optional(),
+      mentoredTeamCount: zod.number().optional(),
+      advisedTopicCount: zod.number().optional(),
+      avgTeamRating: zod.number().nullish(),
+      publications: zod
+        .array(
+          zod.object({
+            id: zod.string(),
+            title: zod.string(),
+            venue: zod.string(),
+            year: zod.number(),
+            url: zod.string().nullish(),
+          }),
+        )
+        .optional(),
+      availableSlots: zod.number().nullish(),
+    })
+    .optional(),
+  enterpriseProfile: zod
+    .object({
+      industry: zod.string().nullish(),
+      size: zod.string().nullish(),
+      foundedYear: zod.number().nullish(),
+      headquarters: zod.string().nullish(),
+      website: zod.string().nullish(),
+      about: zod.string().nullish(),
+      partnerSince: zod.number().nullish(),
+      sponsoredBriefCount: zod.number().optional(),
+      adoptedProjectCount: zod.number().optional(),
+      placedStudentCount: zod.number().optional(),
+      focusAreas: zod.array(zod.string()).optional(),
+      offeredBenefits: zod.array(zod.string()).optional(),
+      contactPerson: zod
+        .object({
+          name: zod.string(),
+          role: zod.string(),
+          email: zod.string(),
+          phone: zod.string().nullish(),
+        })
+        .optional(),
+    })
+    .optional(),
 });
 
 export const UpdatePortfolioResponse = zod.object({
   userId: zod.string(),
+  role: zod
+    .enum(["student", "instructor", "enterprise", "alumni", "admin"])
+    .optional(),
   name: zod.string(),
   avatarUrl: zod.string().nullish(),
   bio: zod.string(),
@@ -160,6 +268,57 @@ export const UpdatePortfolioResponse = zod.object({
         archiveId: zod.string().nullish(),
       }),
     )
+    .optional(),
+  instructorProfile: zod
+    .object({
+      title: zod.string().nullish(),
+      department: zod.string().nullish(),
+      yearsTeaching: zod.number().nullish(),
+      mentoringStatement: zod.string().nullish(),
+      officeHours: zod.string().nullish(),
+      contactEmail: zod.string().nullish(),
+      expertise: zod.array(zod.string()).optional(),
+      focusDomains: zod.array(zod.string()).optional(),
+      mentoredTeamCount: zod.number().optional(),
+      advisedTopicCount: zod.number().optional(),
+      avgTeamRating: zod.number().nullish(),
+      publications: zod
+        .array(
+          zod.object({
+            id: zod.string(),
+            title: zod.string(),
+            venue: zod.string(),
+            year: zod.number(),
+            url: zod.string().nullish(),
+          }),
+        )
+        .optional(),
+      availableSlots: zod.number().nullish(),
+    })
+    .optional(),
+  enterpriseProfile: zod
+    .object({
+      industry: zod.string().nullish(),
+      size: zod.string().nullish(),
+      foundedYear: zod.number().nullish(),
+      headquarters: zod.string().nullish(),
+      website: zod.string().nullish(),
+      about: zod.string().nullish(),
+      partnerSince: zod.number().nullish(),
+      sponsoredBriefCount: zod.number().optional(),
+      adoptedProjectCount: zod.number().optional(),
+      placedStudentCount: zod.number().optional(),
+      focusAreas: zod.array(zod.string()).optional(),
+      offeredBenefits: zod.array(zod.string()).optional(),
+      contactPerson: zod
+        .object({
+          name: zod.string(),
+          role: zod.string(),
+          email: zod.string(),
+          phone: zod.string().nullish(),
+        })
+        .optional(),
+    })
     .optional(),
 });
 

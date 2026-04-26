@@ -730,6 +730,7 @@ components:
       required: [userId, name, bio, interests, skills, completedProjects, contributionScore]
       properties:
         userId: { type: string }
+        role: { type: string, enum: [student, instructor, enterprise, alumni, admin] }
         name: { type: string }
         avatarUrl: { type: string, nullable: true }
         bio: { type: string }
@@ -751,6 +752,73 @@ components:
         pastProjects:
           type: array
           items: { $ref: "#/components/schemas/PastProject" }
+        instructorProfile:
+          $ref: "#/components/schemas/InstructorProfile"
+        enterpriseProfile:
+          $ref: "#/components/schemas/EnterpriseProfile"
+
+    InstructorProfile:
+      type: object
+      properties:
+        title: { type: string, nullable: true }
+        department: { type: string, nullable: true }
+        yearsTeaching: { type: integer, nullable: true }
+        mentoringStatement: { type: string, nullable: true }
+        officeHours: { type: string, nullable: true }
+        contactEmail: { type: string, nullable: true }
+        expertise:
+          type: array
+          items: { type: string }
+        focusDomains:
+          type: array
+          items: { type: string }
+        mentoredTeamCount: { type: integer }
+        advisedTopicCount: { type: integer }
+        avgTeamRating: { type: number, nullable: true }
+        publications:
+          type: array
+          items: { $ref: "#/components/schemas/Publication" }
+        availableSlots: { type: integer, nullable: true }
+
+    Publication:
+      type: object
+      required: [id, title, venue, year]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        venue: { type: string }
+        year: { type: integer }
+        url: { type: string, nullable: true }
+
+    EnterpriseProfile:
+      type: object
+      properties:
+        industry: { type: string, nullable: true }
+        size: { type: string, nullable: true }
+        foundedYear: { type: integer, nullable: true }
+        headquarters: { type: string, nullable: true }
+        website: { type: string, nullable: true }
+        about: { type: string, nullable: true }
+        partnerSince: { type: integer, nullable: true }
+        sponsoredBriefCount: { type: integer }
+        adoptedProjectCount: { type: integer }
+        placedStudentCount: { type: integer }
+        focusAreas:
+          type: array
+          items: { type: string }
+        offeredBenefits:
+          type: array
+          items: { type: string }
+        contactPerson: { $ref: "#/components/schemas/EnterpriseContact" }
+
+    EnterpriseContact:
+      type: object
+      required: [name, role, email]
+      properties:
+        name: { type: string }
+        role: { type: string }
+        email: { type: string }
+        phone: { type: string, nullable: true }
 
     PastProject:
       type: object
@@ -782,6 +850,10 @@ components:
           type: array
           items: { $ref: "#/components/schemas/PortfolioSkill" }
         publicVisible: { type: boolean }
+        instructorProfile:
+          $ref: "#/components/schemas/InstructorProfile"
+        enterpriseProfile:
+          $ref: "#/components/schemas/EnterpriseProfile"
 
     TopicSource:
       type: string

@@ -5,11 +5,15 @@
  * PROMATCH API
  * OpenAPI spec version: 0.1.0
  */
+import type { EnterpriseProfile } from "./enterpriseProfile";
+import type { InstructorProfile } from "./instructorProfile";
 import type { PastProject } from "./pastProject";
+import type { PortfolioRole } from "./portfolioRole";
 import type { PortfolioSkill } from "./portfolioSkill";
 
 export interface Portfolio {
   userId: string;
+  role?: PortfolioRole;
   name: string;
   avatarUrl?: string | null;
   bio: string;
@@ -23,4 +27,6 @@ export interface Portfolio {
   publicVisible?: boolean;
   portfolioUrl?: string | null;
   pastProjects?: PastProject[];
+  instructorProfile?: InstructorProfile;
+  enterpriseProfile?: EnterpriseProfile;
 }

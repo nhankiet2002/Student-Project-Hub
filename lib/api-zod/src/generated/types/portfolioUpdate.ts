@@ -5,6 +5,8 @@
  * PROMATCH API
  * OpenAPI spec version: 0.1.0
  */
+import type { EnterpriseProfile } from "./enterpriseProfile";
+import type { InstructorProfile } from "./instructorProfile";
 import type { PortfolioSkill } from "./portfolioSkill";
 
 export interface PortfolioUpdate {
@@ -14,4 +16,6 @@ export interface PortfolioUpdate {
   interests?: string[];
   skills?: PortfolioSkill[];
   publicVisible?: boolean;
+  instructorProfile?: InstructorProfile;
+  enterpriseProfile?: EnterpriseProfile;
 }

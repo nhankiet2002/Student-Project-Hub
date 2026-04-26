@@ -14,10 +14,19 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { Plus, X, Loader2, Save, FolderKanban, Trophy, Calendar, Star, ArrowRight } from "lucide-react";
+import InstructorPortfolio from "./portfolio-instructor";
+import EnterprisePortfolio from "./portfolio-enterprise";
 
 export default function Portfolio() {
   const { data: session } = useGetSession();
   const userId = session?.id || "";
+  const role = session?.role;
+  if (role === "instructor") return <InstructorPortfolio userId={userId} />;
+  if (role === "enterprise") return <EnterprisePortfolio userId={userId} />;
+  return <StudentPortfolio userId={userId} />;
+}
+
+function StudentPortfolio({ userId }: { userId: string }) {
   const { data: portfolio, isLoading } = useGetPortfolio(userId, { query: { enabled: !!userId, queryKey: getGetPortfolioQueryKey(userId) } });
   const { data: skills } = useListSkills();
   const { data: activeProjects } = useListProjects();

@@ -37,8 +37,56 @@ export interface PastProject {
   archiveId?: string | null;
 }
 
+export interface Publication {
+  id: string;
+  title: string;
+  venue: string;
+  year: number;
+  url?: string | null;
+}
+
+export interface InstructorProfile {
+  title?: string | null;
+  department?: string | null;
+  yearsTeaching?: number | null;
+  mentoringStatement?: string | null;
+  officeHours?: string | null;
+  contactEmail?: string | null;
+  expertise: string[];
+  focusDomains: string[];
+  mentoredTeamCount: number;
+  advisedTopicCount: number;
+  avgTeamRating?: number | null;
+  publications: Publication[];
+  availableSlots?: number | null;
+}
+
+export interface EnterpriseContact {
+  name: string;
+  role: string;
+  email: string;
+  phone?: string | null;
+}
+
+export interface EnterpriseProfile {
+  industry?: string | null;
+  size?: string | null;
+  foundedYear?: number | null;
+  headquarters?: string | null;
+  website?: string | null;
+  about?: string | null;
+  partnerSince?: number | null;
+  sponsoredBriefCount: number;
+  adoptedProjectCount: number;
+  placedStudentCount: number;
+  focusAreas: string[];
+  offeredBenefits: string[];
+  contactPerson?: EnterpriseContact;
+}
+
 export interface Portfolio {
   userId: string;
+  role?: UserRole;
   name: string;
   avatarUrl: string | null;
   bio: string;
@@ -52,6 +100,8 @@ export interface Portfolio {
   publicVisible: boolean;
   portfolioUrl: string | null;
   pastProjects?: PastProject[];
+  instructorProfile?: InstructorProfile;
+  enterpriseProfile?: EnterpriseProfile;
 }
 
 export type TopicSource = "instructor" | "enterprise" | "alumni" | "student" | "ai" | "knowledge" | "trend";

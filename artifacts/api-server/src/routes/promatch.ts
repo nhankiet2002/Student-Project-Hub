@@ -57,12 +57,13 @@ router.get("/skills", (_req, res) => {
 
 router.get("/portfolios/:userId", (req, res) => {
   const userId = req.params.userId;
+  const u = users.find((x) => x.id === userId);
   let p = portfolios[userId];
   if (!p) {
-    const u = users.find((x) => x.id === userId);
     if (!u) return res.status(404).json({ error: "Not found" });
     p = {
       userId: u.id,
+      role: u.role,
       name: u.name,
       avatarUrl: null,
       bio: "",
@@ -78,14 +79,16 @@ router.get("/portfolios/:userId", (req, res) => {
     };
     portfolios[userId] = p;
   }
-  return res.json(p);
+  return res.json({ ...p, role: u?.role ?? p.role });
 });
 
 router.put("/portfolios/:userId", (req, res) => {
   const userId = req.params.userId;
+  const u = users.find((x) => x.id === userId);
   const existing = portfolios[userId] || {
     userId,
-    name: users.find((x) => x.id === userId)?.name || "Sinh viên",
+    role: u?.role,
+    name: u?.name || "Người dùng",
     avatarUrl: null,
     bio: "",
     major: null,
@@ -100,12 +103,19 @@ router.put("/portfolios/:userId", (req, res) => {
   };
   const updated: Portfolio = {
     ...existing,
+    role: u?.role ?? existing.role,
     bio: req.body?.bio ?? existing.bio,
     major: req.body?.major ?? existing.major,
     year: req.body?.year ?? existing.year,
     interests: req.body?.interests ?? existing.interests,
     skills: req.body?.skills ?? existing.skills,
     publicVisible: req.body?.publicVisible ?? existing.publicVisible,
+    instructorProfile: req.body?.instructorProfile
+      ? { ...(existing.instructorProfile || { expertise: [], focusDomains: [], mentoredTeamCount: 0, advisedTopicCount: 0, publications: [] }), ...req.body.instructorProfile }
+      : existing.instructorProfile,
+    enterpriseProfile: req.body?.enterpriseProfile
+      ? { ...(existing.enterpriseProfile || { sponsoredBriefCount: 0, adoptedProjectCount: 0, placedStudentCount: 0, focusAreas: [], offeredBenefits: [] }), ...req.body.enterpriseProfile }
+      : existing.enterpriseProfile,
   };
   portfolios[userId] = updated;
   res.json(updated);
