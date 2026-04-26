@@ -244,6 +244,47 @@ export const portfolios: Record<string, Portfolio> = {
     contributionScore: 87.5,
     publicVisible: true,
     portfolioUrl: "https://promatch.vn/p/minhanh",
+    pastProjects: [
+      {
+        id: "pp_ma_1",
+        title: "VietQuiz - Nền tảng trắc nghiệm tiếng Việt",
+        role: "Frontend Developer & UI/UX",
+        year: 2025,
+        semester: "HK1 2024-2025",
+        technologies: ["React", "TypeScript", "Tailwind", "Node.js"],
+        summary:
+          "Xây dựng nền tảng tạo và làm bài trắc nghiệm cộng đồng. Phụ trách thiết kế giao diện và toàn bộ frontend, cải thiện tốc độ tải trang lên 40%.",
+        contributionPct: 32.5,
+        rating: 4.6,
+        archiveId: null,
+      },
+      {
+        id: "pp_ma_2",
+        title: "MindMap AI - Sinh sơ đồ tư duy tự động",
+        role: "ML Engineer hỗ trợ",
+        year: 2024,
+        semester: "HK2 2023-2024",
+        technologies: ["Python", "NLP", "spaCy", "React"],
+        summary:
+          "Hợp tác với nhóm 4 sinh viên xây dựng công cụ chuyển bài giảng dài thành sơ đồ tư duy. Phụ trách module trích xuất ý chính bằng NLP.",
+        contributionPct: 28.0,
+        rating: 4.4,
+        archiveId: null,
+      },
+      {
+        id: "pp_ma_3",
+        title: "CampusEvents - App quản lý sự kiện trường",
+        role: "Full-stack Developer",
+        year: 2024,
+        semester: "HK1 2023-2024",
+        technologies: ["Next.js", "PostgreSQL", "Tailwind"],
+        summary:
+          "Đồ án môn Công nghệ Web. Triển khai end-to-end và mời 200+ sinh viên dùng thử trong tuần lễ sự kiện khoa.",
+        contributionPct: 41.0,
+        rating: 4.5,
+        archiveId: null,
+      },
+    ],
   },
   u_s2: {
     userId: "u_s2",

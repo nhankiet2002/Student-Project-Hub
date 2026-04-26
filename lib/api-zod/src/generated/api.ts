@@ -83,6 +83,22 @@ export const GetPortfolioResponse = zod.object({
   contributionScore: zod.number(),
   publicVisible: zod.boolean().optional(),
   portfolioUrl: zod.string().nullish(),
+  pastProjects: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        title: zod.string(),
+        role: zod.string(),
+        year: zod.number(),
+        semester: zod.string().nullish(),
+        technologies: zod.array(zod.string()),
+        summary: zod.string(),
+        contributionPct: zod.number().nullish(),
+        rating: zod.number().nullish(),
+        archiveId: zod.string().nullish(),
+      }),
+    )
+    .optional(),
 });
 
 /**
@@ -129,6 +145,22 @@ export const UpdatePortfolioResponse = zod.object({
   contributionScore: zod.number(),
   publicVisible: zod.boolean().optional(),
   portfolioUrl: zod.string().nullish(),
+  pastProjects: zod
+    .array(
+      zod.object({
+        id: zod.string(),
+        title: zod.string(),
+        role: zod.string(),
+        year: zod.number(),
+        semester: zod.string().nullish(),
+        technologies: zod.array(zod.string()),
+        summary: zod.string(),
+        contributionPct: zod.number().nullish(),
+        rating: zod.number().nullish(),
+        archiveId: zod.string().nullish(),
+      }),
+    )
+    .optional(),
 });
 
 /**

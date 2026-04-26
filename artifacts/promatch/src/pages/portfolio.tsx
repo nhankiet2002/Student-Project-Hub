@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { useGetSession, useGetPortfolio, useUpdatePortfolio, useListSkills, getGetPortfolioQueryKey, getGetSessionQueryKey } from "@workspace/api-client-react";
+import { Link } from "wouter";
+import { useGetSession, useGetPortfolio, useUpdatePortfolio, useListSkills, useListProjects, getGetPortfolioQueryKey, getGetSessionQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -9,15 +10,17 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
+import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { Plus, X, Loader2, Save } from "lucide-react";
+import { Plus, X, Loader2, Save, FolderKanban, Trophy, Calendar, Star, ArrowRight } from "lucide-react";
 
 export default function Portfolio() {
   const { data: session } = useGetSession();
   const userId = session?.id || "";
   const { data: portfolio, isLoading } = useGetPortfolio(userId, { query: { enabled: !!userId, queryKey: getGetPortfolioQueryKey(userId) } });
   const { data: skills } = useListSkills();
+  const { data: activeProjects } = useListProjects();
   const queryClient = useQueryClient();
 
   const updateMutation = useUpdatePortfolio({
@@ -273,6 +276,134 @@ export default function Portfolio() {
                   Thêm
                 </Button>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <FolderKanban className="w-5 h-5 text-primary" />
+                    Dự án đang thực hiện
+                  </CardTitle>
+                  <CardDescription>Các dự án bạn đang là thành viên trong học kỳ này.</CardDescription>
+                </div>
+                <Badge variant="secondary">{activeProjects?.length ?? 0}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!activeProjects || activeProjects.length === 0 ? (
+                <div className="text-center py-8 border border-dashed rounded-lg text-muted-foreground">
+                  <FolderKanban className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <div className="text-sm">Chưa tham gia dự án nào trong học kỳ này</div>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {activeProjects.map((p) => {
+                    const statusLabel: Record<string, string> = {
+                      planning: "Đang lên kế hoạch",
+                      in_progress: "Đang thực hiện",
+                      review: "Đang review",
+                      completed: "Hoàn thành",
+                      at_risk: "Có nguy cơ chậm",
+                    };
+                    const statusColor: Record<string, string> = {
+                      planning: "bg-blue-500/10 text-blue-700 dark:text-blue-300",
+                      in_progress: "bg-indigo-500/10 text-indigo-700 dark:text-indigo-300",
+                      review: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
+                      completed: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                      at_risk: "bg-rose-500/10 text-rose-700 dark:text-rose-300",
+                    };
+                    return (
+                      <Link key={p.id} href={`/projects/${p.id}`}>
+                        <div className="group p-4 border rounded-lg hover:border-primary hover:bg-primary/5 transition-colors cursor-pointer">
+                          <div className="flex items-start justify-between gap-3 mb-2">
+                            <div className="min-w-0 flex-1">
+                              <div className="font-semibold truncate group-hover:text-primary transition-colors">{p.name}</div>
+                              <div className="text-xs text-muted-foreground line-clamp-1 mt-0.5">{p.topicTitle}</div>
+                            </div>
+                            <span className={`text-xs px-2 py-0.5 rounded-full whitespace-nowrap ${statusColor[p.status] || "bg-muted"}`}>
+                              {statusLabel[p.status] || p.status}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-3">
+                            <Progress value={p.progress} className="h-1.5 flex-1" />
+                            <span className="text-xs text-muted-foreground tabular-nums w-10 text-right">{p.progress}%</span>
+                          </div>
+                          <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                            <span className="flex items-center gap-1"><Calendar className="w-3 h-3" /> Hạn {new Date(p.dueDate).toLocaleDateString("vi-VN")}</span>
+                            <span>·</span>
+                            <span>{p.completedMilestones}/{p.milestoneCount} mốc</span>
+                            <span>·</span>
+                            <span>{p.memberCount} thành viên</span>
+                            <ArrowRight className="w-3 h-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-amber-500" />
+                    Kinh nghiệm dự án
+                  </CardTitle>
+                  <CardDescription>Những dự án bạn đã hoàn thành — phần quan trọng để gây ấn tượng với nhà tuyển dụng.</CardDescription>
+                </div>
+                <Badge variant="secondary">{(portfolio as any).pastProjects?.length ?? 0}</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {!((portfolio as any).pastProjects) || (portfolio as any).pastProjects.length === 0 ? (
+                <div className="text-center py-8 border border-dashed rounded-lg text-muted-foreground">
+                  <Trophy className="w-8 h-8 mx-auto mb-2 opacity-40" />
+                  <div className="text-sm">Chưa có kinh nghiệm dự án nào được ghi nhận</div>
+                </div>
+              ) : (
+                <div className="relative pl-6 space-y-5 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-px before:bg-border">
+                  {((portfolio as any).pastProjects as any[]).map((pp) => (
+                    <div key={pp.id} className="relative">
+                      <span className="absolute -left-[18px] top-1.5 w-3 h-3 rounded-full bg-primary border-4 border-background" />
+                      <div className="border rounded-lg p-4 hover:border-primary/50 transition-colors">
+                        <div className="flex items-start justify-between gap-3 mb-1">
+                          <div className="font-semibold">{pp.title}</div>
+                          {pp.rating != null && (
+                            <span className="flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 whitespace-nowrap">
+                              <Star className="w-3.5 h-3.5 fill-current" />
+                              {pp.rating.toFixed(1)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground mb-2">
+                          <span className="font-medium text-foreground">{pp.role}</span>
+                          <span>·</span>
+                          <span>{pp.semester || pp.year}</span>
+                          {pp.contributionPct != null && (
+                            <>
+                              <span>·</span>
+                              <span>Đóng góp {pp.contributionPct}%</span>
+                            </>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground leading-relaxed mb-2.5">{pp.summary}</p>
+                        <div className="flex flex-wrap gap-1">
+                          {(pp.technologies as string[]).map((t) => (
+                            <Badge key={t} variant="outline" className="text-[10px] font-normal">{t}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>

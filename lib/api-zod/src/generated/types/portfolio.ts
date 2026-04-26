@@ -5,6 +5,7 @@
  * PROMATCH API
  * OpenAPI spec version: 0.1.0
  */
+import type { PastProject } from "./pastProject";
 import type { PortfolioSkill } from "./portfolioSkill";
 
 export interface Portfolio {
@@ -21,4 +22,5 @@ export interface Portfolio {
   contributionScore: number;
   publicVisible?: boolean;
   portfolioUrl?: string | null;
+  pastProjects?: PastProject[];
 }

@@ -59,6 +59,19 @@ export interface PortfolioSkill {
   level: PortfolioSkillLevel;
 }
 
+export interface PastProject {
+  id: string;
+  title: string;
+  role: string;
+  year: number;
+  semester?: string | null;
+  technologies: string[];
+  summary: string;
+  contributionPct?: number | null;
+  rating?: number | null;
+  archiveId?: string | null;
+}
+
 export interface Portfolio {
   userId: string;
   name: string;
@@ -73,6 +86,7 @@ export interface Portfolio {
   contributionScore: number;
   publicVisible?: boolean;
   portfolioUrl?: string | null;
+  pastProjects?: PastProject[];
 }
 
 export interface PortfolioUpdate {

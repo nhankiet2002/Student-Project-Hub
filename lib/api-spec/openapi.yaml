@@ -748,6 +748,26 @@ components:
         contributionScore: { type: number }
         publicVisible: { type: boolean }
         portfolioUrl: { type: string, nullable: true }
+        pastProjects:
+          type: array
+          items: { $ref: "#/components/schemas/PastProject" }
+
+    PastProject:
+      type: object
+      required: [id, title, role, year, technologies, summary]
+      properties:
+        id: { type: string }
+        title: { type: string }
+        role: { type: string }
+        year: { type: integer }
+        semester: { type: string, nullable: true }
+        technologies:
+          type: array
+          items: { type: string }
+        summary: { type: string }
+        contributionPct: { type: number, nullable: true }
+        rating: { type: number, nullable: true }
+        archiveId: { type: string, nullable: true }
 
     PortfolioUpdate:
       type: object

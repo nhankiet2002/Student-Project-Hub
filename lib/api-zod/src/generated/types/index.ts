@@ -40,6 +40,7 @@ export * from "./moderationItemContentType";
 export * from "./moderationItemStatus";
 export * from "./notification";
 export * from "./notificationType";
+export * from "./pastProject";
 export * from "./portfolio";
 export * from "./portfolioSkill";
 export * from "./portfolioSkillLevel";
