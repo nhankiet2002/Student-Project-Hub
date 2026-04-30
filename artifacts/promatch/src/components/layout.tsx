@@ -36,6 +36,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { ChatbotWidget } from "@/components/chatbot-widget";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useGetSession();
@@ -253,6 +254,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
+
+      <ChatbotWidget />
     </div>
   );
 }
