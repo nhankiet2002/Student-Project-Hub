@@ -1,0 +1,29 @@
+"Hãy tạo một giao diện bảng điều khiển (dashboard) kỹ thuật số cho sinh viên, trong một hệ thống quản lý đồ án như PROMATCH. Giao diện nên có bố cục sạch sẽ, hiện đại và dựa trên thẻ (card-based), với bốn hàng thẻ chính và hoàn toàn sử dụng tiếng Việt.
+
+Hàng 1 (Banner): Một thẻ banner lớn với màu gradient tím-đến-xanh, hiển thị văn bản 'Chào mừng trở lại 👋', tiếp theo là văn bản 'Sinh viên' lớn hơn, và mô tả 'Khám phá đề tài và quản lý dự án của bạn'. Bên dưới, có hai nút màu kiểu phẳng, hiện đại: nút 'Xem đề tài' với biểu tượng cuốn sách và nút 'AI Gợi ý' với biểu tượng lấp lánh.
+
+Hàng 2 (Thẻ Thống kê): Bốn thẻ nhỏ hơn, mỗi thẻ có biểu tượng màu, tiêu đề và số:
+
+'Tổng đề tài' với biểu tượng cuốn sách xanh dương và số 0.
+
+'Dự án đang thực hiện' với biểu tượng thư mục tím và số 0.
+
+'Nhóm đang tuyển' với biểu tượng nhóm người xanh lá và số 12.
+
+'Call for Projects' với biểu tượng tòa nhà cam và số 8.
+
+Hàng 3 (Khu vực Chính - Tích hợp Tính năng Mới): Hai thẻ lớn hơn cho nội dung chính.
+
+Thẻ trái: 'Đề tài mới nhất', có tiêu đề và liên kết 'Xem tất cả ->'. Hiển thị trạng thái trống với biểu tượng cuốn sách lớn mờ và văn bản 'Chưa có đề tài nào'.
+
+Thẻ phải: 'Dự án của tôi', có tiêu đề và liên kết 'Xem tất cả ->'. Thay vì trạng thái trống, nó hiển thị một thẻ dự án cụ thể (populated). Thẻ này bao gồm: Tên dự án 'Hệ thống Quản lý Đồ án PROMATCH (Nhóm 5)'. Icon thư mục mờ. Hiển thị 'Tiến độ: 45% hoàn thành' với một thanh tiến độ màu tím nhỏ.
+
+Bên dưới thông tin dự án, hãy thêm một khu vực chuyên dụng mới cho tính năng xuất báo cáo, có nhãn 'Hành động Quản lý & Báo cáo'.
+
+Trong khu vực này, hiển thị hai nút lớn nổi bật, kiểu phẳng, màu tím: một nút 'Xuất PDF (Chi tiết dự án)' với biểu tượng PDF và một nút 'Xuất CSV (Công việc & Thảo luận)' với biểu tượng CSV.
+
+Dưới hai nút xuất, thêm một hàng các hộp kiểm (checkbox) tùy chọn chi tiết để người dùng có thể chọn kèm theo: '[ ] Kèm danh sách công việc', '[ ] Kèm lịch sử thảo luận', '[ ] Kèm biểu đồ đóng góp'.
+
+Hàng 4 (Thẻ Hành động Nhanh): Bốn thẻ hành động rộng, thấp hơn, mỗi thẻ có biểu tượng màu và văn bản: 'AI sinh đề tài' với lấp lánh tím, 'Tìm thành viên' với nhóm xanh dương, 'Xem Call for Projects' với tòa nhà cam, và 'Kho tri thức' với cuốn sách xanh lá.
+
+Phong cách: Thiết kế phẳng, tối giản, bóng đổ nhẹ (soft shadows), phối màu sạch (trắng, tím làm chủ đạo, các màu khác làm điểm nhấn), font chữ hiện đại. Đảm bảo ngôn ngữ tiếng Việt chính xác và bố cục cân đối."

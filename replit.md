@@ -33,6 +33,11 @@ Monorepo (pnpm workspaces). All UI text is Vietnamese. No emojis in UI.
 - **Skill complementarity** for teammate recommendations in `/api/teams/recommend` (shared + complementary skills, gap analysis vs topic).
 - **AI topic generation** quota: 10/month per student tracked in `aiQuotaByUser`.
 
+### Student dashboard layout
+- `artifacts/promatch/src/pages/home.tsx` `StudentDashboard` is composed of four rows: gradient banner, four colored stat cards, a two-column main area (latest topics + my projects with report-export panel), and four quick-action cards.
+- `ReportExportSection` (inside home.tsx) lets the student export the featured project as PDF (via `jspdf`) or CSV (Blob download). Three checkboxes — "Kèm danh sách công việc", "Kèm lịch sử thảo luận", "Kèm biểu đồ đóng góp" — add `tasks` (`useListTasks`), `recentActivity` (from `useGetProject`), and `contributions` (`useGetContributions`) sections to the export. CSV is UTF-8 BOM + comma-separated with quoted-field escaping; PDF uses helvetica with a manual line wrapper.
+- The featured project picks the first project with progress > 0 and not completed, falling back to `projects[0]`.
+
 ### Push notifications
 - Backend helper `pushNotification(...)` in `artifacts/api-server/src/routes/promatch.ts` prepends a new entry to the in-memory `notifications` array.
 - Triggers exposed:
