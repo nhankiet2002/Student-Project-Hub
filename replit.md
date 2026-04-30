@@ -33,6 +33,16 @@ Monorepo (pnpm workspaces). All UI text is Vietnamese. No emojis in UI.
 - **Skill complementarity** for teammate recommendations in `/api/teams/recommend` (shared + complementary skills, gap analysis vs topic).
 - **AI topic generation** quota: 10/month per student tracked in `aiQuotaByUser`.
 
+### Push notifications
+- Backend helper `pushNotification(...)` in `artifacts/api-server/src/routes/promatch.ts` prepends a new entry to the in-memory `notifications` array.
+- Triggers exposed:
+  - `POST /api/teams/invite` (`{ topicTitle, inviterName, message? }`) — emits a `team` notification linking to `/teams`.
+  - `PUT /api/projects/:projectId/status` (`{ status, note? }`) — updates the project status, logs a recent-activity entry, and emits a `milestone` notification linking to `/projects/:projectId`.
+  - `POST /api/notifications/read-all` — marks all notifications read.
+- Frontend polling: `useListNotifications` is called with `refetchInterval: 5000` in both the topbar (`layout.tsx`) and the `NotificationWatcher` so the bell badge and toast stream stay current.
+- `artifacts/promatch/src/components/notification-watcher.tsx` snapshots seen IDs on first load, then fires a shadcn toast (with optional "Xem" action navigating to `notification.link`) for every newly-arriving notification. Mounted once in `AppLayout`.
+- Demo triggers wired to real backend mutations: "Mời vào nhóm" buttons on `/teams` call `useSendTeamInvitation`; the project header on `/projects/:projectId` includes a status `Select` that calls `useUpdateProjectStatus`.
+
 ### AI Chatbot (PROMATCH AI)
 - Floating chat widget (`artifacts/promatch/src/components/chatbot-widget.tsx`) shown only for student role; bottom-right toggle button.
 - Streaming SSE endpoint `POST /api/chatbot/message` in `artifacts/api-server/src/routes/chatbot.ts` powered by OpenAI (`gpt-5.4`) via Replit AI Integrations (`@workspace/integrations-openai-ai-server`). No API key required.

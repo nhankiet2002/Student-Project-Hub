@@ -490,6 +490,30 @@ export interface Notification {
   link?: string | null;
 }
 
+export interface TeamInvitation {
+  /** Topic the team is forming around */
+  topicTitle: string;
+  /** Display name of the student sending the invite */
+  inviterName: string;
+  message?: string | null;
+}
+
+export type ProjectStatusUpdateStatus =
+  (typeof ProjectStatusUpdateStatus)[keyof typeof ProjectStatusUpdateStatus];
+
+export const ProjectStatusUpdateStatus = {
+  planning: "planning",
+  in_progress: "in_progress",
+  review: "review",
+  completed: "completed",
+  at_risk: "at_risk",
+} as const;
+
+export interface ProjectStatusUpdate {
+  status: ProjectStatusUpdateStatus;
+  note?: string | null;
+}
+
 export type AdminStatsUsersByRoleItem = {
   role: string;
   count: number;
@@ -635,6 +659,10 @@ export type RecommendTeammatesParams = {
 export type ListKnowledgeParams = {
   q?: string;
   domain?: string;
+};
+
+export type MarkAllNotificationsRead200 = {
+  count: number;
 };
 
 export type ListUsersParams = {

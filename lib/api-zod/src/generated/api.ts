@@ -879,6 +879,58 @@ export const MarkNotificationReadResponse = zod.object({
   link: zod.string().nullish(),
 });
 
+export const MarkAllNotificationsReadResponse = zod.object({
+  count: zod.number(),
+});
+
+/**
+ * @summary Send a team invitation that creates a push notification for the invitee
+ */
+export const SendTeamInvitationBody = zod.object({
+  topicTitle: zod.string().describe("Topic the team is forming around"),
+  inviterName: zod
+    .string()
+    .describe("Display name of the student sending the invite"),
+  message: zod.string().nullish(),
+});
+
+/**
+ * @summary Update project status; emits a push notification for members
+ */
+export const UpdateProjectStatusParams = zod.object({
+  projectId: zod.coerce.string(),
+});
+
+export const UpdateProjectStatusBody = zod.object({
+  status: zod.enum([
+    "planning",
+    "in_progress",
+    "review",
+    "completed",
+    "at_risk",
+  ]),
+  note: zod.string().nullish(),
+});
+
+export const UpdateProjectStatusResponse = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  topicTitle: zod.string(),
+  status: zod.enum([
+    "planning",
+    "in_progress",
+    "review",
+    "completed",
+    "at_risk",
+  ]),
+  progress: zod.number(),
+  memberCount: zod.number(),
+  instructorName: zod.string(),
+  dueDate: zod.string(),
+  milestoneCount: zod.number(),
+  completedMilestones: zod.number(),
+});
+
 /**
  * @summary Admin dashboard statistics
  */

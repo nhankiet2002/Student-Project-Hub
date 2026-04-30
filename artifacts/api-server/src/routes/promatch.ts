@@ -547,6 +547,20 @@ router.get("/knowledge/:archiveId", (req, res) => {
 });
 
 // ===== Notifications =====
+function pushNotification(input: Omit<Notification, "id" | "read" | "createdAt"> & { read?: boolean }): Notification {
+  const n: Notification = {
+    id: `nt_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    title: input.title,
+    body: input.body,
+    type: input.type,
+    read: input.read ?? false,
+    createdAt: new Date().toISOString(),
+    link: input.link ?? null,
+  };
+  notifications.unshift(n);
+  return n;
+}
+
 router.get("/notifications", (_req, res) => {
   res.json(notifications);
 });
@@ -556,6 +570,70 @@ router.post("/notifications/:notificationId/read", (req, res) => {
   if (!n) return res.status(404).json({ error: "Not found" });
   n.read = true;
   return res.json(n);
+});
+
+router.post("/notifications/read-all", (_req, res) => {
+  let count = 0;
+  for (const n of notifications) {
+    if (!n.read) { n.read = true; count++; }
+  }
+  res.json({ count });
+});
+
+// Push notification: team invitation
+router.post("/teams/invite", (req, res) => {
+  const body = req.body || {};
+  const topicTitle = String(body.topicTitle || "đề tài").slice(0, 200);
+  const inviterName = String(body.inviterName || "Một sinh viên").slice(0, 100);
+  const message = body.message ? String(body.message).slice(0, 200) : null;
+  const n = pushNotification({
+    title: "Lời mời tham gia nhóm",
+    body: message
+      ? `${inviterName} mời bạn tham gia nhóm cho đề tài "${topicTitle}". Lời nhắn: ${message}`
+      : `${inviterName} mời bạn tham gia nhóm cho đề tài "${topicTitle}".`,
+    type: "team",
+    link: "/teams",
+  });
+  res.status(201).json(n);
+});
+
+// Push notification: project status update
+router.put("/projects/:projectId/status", (req, res) => {
+  const id = req.params.projectId!;
+  const idx = projects.findIndex((p) => p.id === id);
+  if (idx === -1) return res.status(404).json({ error: "Not found" });
+  const project = projects[idx]!;
+  const newStatus = String(req.body?.status || "") as Project["status"];
+  const allowed: Project["status"][] = ["planning", "in_progress", "review", "completed", "at_risk"];
+  if (!allowed.includes(newStatus)) {
+    return res.status(400).json({ error: "Invalid status" });
+  }
+  const oldStatus = project.status;
+  project.status = newStatus;
+  if (projectDetails[id]) {
+    projectDetails[id]!.project = project;
+    projectDetails[id]!.recentActivity.unshift({
+      id: `act_${Date.now()}`,
+      message: `Trạng thái dự án chuyển từ "${oldStatus}" sang "${newStatus}"`,
+      timestamp: new Date().toISOString(),
+      actor: currentUser().name,
+    });
+  }
+  const statusLabels: Record<string, string> = {
+    planning: "Đang lập kế hoạch",
+    in_progress: "Đang triển khai",
+    review: "Chờ đánh giá",
+    completed: "Đã hoàn thành",
+    at_risk: "Cảnh báo trễ tiến độ",
+  };
+  const note = req.body?.note ? ` Ghi chú: ${String(req.body.note).slice(0, 200)}` : "";
+  pushNotification({
+    title: `Cập nhật trạng thái: ${project.name}`,
+    body: `Trạng thái dự án đã chuyển sang "${statusLabels[newStatus]}".${note}`,
+    type: "milestone",
+    link: `/projects/${id}`,
+  });
+  return res.json(project);
 });
 
 // ===== Admin =====

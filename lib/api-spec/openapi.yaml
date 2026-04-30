@@ -572,6 +572,64 @@ paths:
               schema:
                 $ref: "#/components/schemas/Notification"
 
+  /notifications/read-all:
+    post:
+      operationId: markAllNotificationsRead
+      tags: [notifications]
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [count]
+                properties:
+                  count: { type: integer }
+
+  /teams/invite:
+    post:
+      operationId: sendTeamInvitation
+      tags: [notifications]
+      summary: Send a team invitation that creates a push notification for the invitee
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TeamInvitation"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Notification"
+
+  /projects/{projectId}/status:
+    put:
+      operationId: updateProjectStatus
+      tags: [projects]
+      summary: Update project status; emits a push notification for members
+      parameters:
+        - name: projectId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectStatusUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Project"
+
   /admin/stats:
     get:
       operationId: getAdminStats
@@ -1176,6 +1234,23 @@ components:
         read: { type: boolean }
         createdAt: { type: string }
         link: { type: string, nullable: true }
+
+    TeamInvitation:
+      type: object
+      required: [topicTitle, inviterName]
+      properties:
+        topicTitle: { type: string, description: "Topic the team is forming around" }
+        inviterName: { type: string, description: "Display name of the student sending the invite" }
+        message: { type: string, nullable: true }
+
+    ProjectStatusUpdate:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          enum: [planning, in_progress, review, completed, at_risk]
+        note: { type: string, nullable: true }
 
     AdminStats:
       type: object

@@ -1,4 +1,4 @@
-import { useRecommendTeammates } from "@workspace/api-client-react";
+import { useRecommendTeammates, useSendTeamInvitation, useGetSession, useListTopics, getListNotificationsQueryKey } from "@workspace/api-client-react";
 import { useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -6,17 +6,35 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserPlus, Star, CheckCircle2, AlertCircle } from "lucide-react";
-import { toast } from "sonner";
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function Teams() {
   const searchString = useSearch();
   const searchParams = new URLSearchParams(searchString);
   const topicId = searchParams.get("topicId") || undefined;
-  
+
   const { data: candidates, isLoading } = useRecommendTeammates({ topicId });
+  const { data: session } = useGetSession();
+  const { data: topics } = useListTopics();
+  const queryClient = useQueryClient();
+
+  const inviteMutation = useSendTeamInvitation({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+      },
+    },
+  });
 
   const handleInvite = (name: string) => {
-    toast.success(`Đã gửi lời mời tới ${name}`);
+    const topic = topicId ? topics?.items?.find((t) => t.id === topicId) : undefined;
+    inviteMutation.mutate({
+      data: {
+        topicTitle: topic?.title || "đề tài đang đề xuất",
+        inviterName: session?.name || "Một sinh viên",
+        message: `Xin chào ${name}, mình muốn mời bạn cùng làm đồ án.`,
+      },
+    });
   };
 
   return (

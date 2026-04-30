@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useGetProject, useListTasks, useCreateTask, useUpdateTask, useGetContributions, getListTasksQueryKey, getGetContributionsQueryKey , getGetProjectQueryKey } from "@workspace/api-client-react";
+import { useGetProject, useListTasks, useCreateTask, useUpdateTask, useGetContributions, useUpdateProjectStatus, getListTasksQueryKey, getGetContributionsQueryKey , getGetProjectQueryKey, getListNotificationsQueryKey, getListProjectsQueryKey } from "@workspace/api-client-react";
 import { useParams } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -52,6 +52,32 @@ export default function ProjectDetail() {
     }
   });
 
+  const updateProjectStatusMutation = useUpdateProjectStatus({
+    mutation: {
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId || "") });
+        queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+      },
+    },
+  });
+
+  const handleStatusChange = (status: string) => {
+    if (!projectId) return;
+    updateProjectStatusMutation.mutate({
+      projectId,
+      data: { status: status as "planning" | "in_progress" | "review" | "completed" | "at_risk" },
+    });
+  };
+
+  const statusLabels: Record<string, string> = {
+    planning: "Đang lập kế hoạch",
+    in_progress: "Đang triển khai",
+    review: "Chờ đánh giá",
+    completed: "Đã hoàn thành",
+    at_risk: "Cảnh báo trễ tiến độ",
+  };
+
   const handleCreateTask = () => {
     if (!newTask.title.trim()) return;
     createTaskMutation.mutate({
@@ -88,17 +114,42 @@ export default function ProjectDetail() {
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-end">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Badge variant={project.status === 'completed' ? 'default' : 'secondary'}>{project.status}</Badge>
+          <div className="flex items-center gap-2 mb-2 flex-wrap">
+            <Badge variant={project.status === 'completed' ? 'default' : 'secondary'}>
+              {statusLabels[project.status] ?? project.status}
+            </Badge>
             <span className="text-sm text-muted-foreground">{project.topicTitle}</span>
           </div>
           <h1 className="text-3xl font-bold tracking-tight">{project.name}</h1>
         </div>
-        <div className="text-right">
-          <div className="text-sm text-muted-foreground mb-1">Tiến độ tổng thể</div>
-          <div className="flex items-center gap-3">
-            <Progress value={project.progress} className="w-32 h-2" />
-            <span className="font-bold">{Math.round(project.progress)}%</span>
+        <div className="flex flex-col items-end gap-3">
+          <div className="flex items-center gap-2">
+            <Label htmlFor="project-status" className="text-xs text-muted-foreground">
+              Trạng thái dự án
+            </Label>
+            <Select
+              value={project.status}
+              onValueChange={handleStatusChange}
+              disabled={updateProjectStatusMutation.isPending}
+            >
+              <SelectTrigger id="project-status" className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="planning">Đang lập kế hoạch</SelectItem>
+                <SelectItem value="in_progress">Đang triển khai</SelectItem>
+                <SelectItem value="review">Chờ đánh giá</SelectItem>
+                <SelectItem value="completed">Đã hoàn thành</SelectItem>
+                <SelectItem value="at_risk">Cảnh báo trễ tiến độ</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="text-right">
+            <div className="text-sm text-muted-foreground mb-1">Tiến độ tổng thể</div>
+            <div className="flex items-center gap-3">
+              <Progress value={project.progress} className="w-32 h-2" />
+              <span className="font-bold">{Math.round(project.progress)}%</span>
+            </div>
           </div>
         </div>
       </div>

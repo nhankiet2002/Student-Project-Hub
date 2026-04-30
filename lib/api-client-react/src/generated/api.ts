@@ -34,6 +34,7 @@ import type {
   ListTopics200,
   ListTopicsParams,
   ListUsersParams,
+  MarkAllNotificationsRead200,
   ModerationItem,
   Notification,
   Portfolio,
@@ -41,6 +42,7 @@ import type {
   Project,
   ProjectCreate,
   ProjectDetail,
+  ProjectStatusUpdate,
   RecommendTeammatesParams,
   RecommendTopicsParams,
   ResolveModerationBody,
@@ -49,6 +51,7 @@ import type {
   Task,
   TaskCreate,
   TaskUpdate,
+  TeamInvitation,
   TeammateRecommendation,
   Topic,
   TopicCreate,
@@ -2449,6 +2452,257 @@ export const useMarkNotificationRead = <
   TContext
 > => {
   return useMutation(getMarkNotificationReadMutationOptions(options));
+};
+
+export const getMarkAllNotificationsReadUrl = () => {
+  return `/api/notifications/read-all`;
+};
+
+export const markAllNotificationsRead = async (
+  options?: RequestInit,
+): Promise<MarkAllNotificationsRead200> => {
+  return customFetch<MarkAllNotificationsRead200>(
+    getMarkAllNotificationsReadUrl(),
+    {
+      ...options,
+      method: "POST",
+    },
+  );
+};
+
+export const getMarkAllNotificationsReadMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markAllNotificationsRead>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof markAllNotificationsRead>>,
+  TError,
+  void,
+  TContext
+> => {
+  const mutationKey = ["markAllNotificationsRead"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof markAllNotificationsRead>>,
+    void
+  > = () => {
+    return markAllNotificationsRead(requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type MarkAllNotificationsReadMutationResult = NonNullable<
+  Awaited<ReturnType<typeof markAllNotificationsRead>>
+>;
+
+export type MarkAllNotificationsReadMutationError = ErrorType<unknown>;
+
+export const useMarkAllNotificationsRead = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof markAllNotificationsRead>>,
+    TError,
+    void,
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof markAllNotificationsRead>>,
+  TError,
+  void,
+  TContext
+> => {
+  return useMutation(getMarkAllNotificationsReadMutationOptions(options));
+};
+
+/**
+ * @summary Send a team invitation that creates a push notification for the invitee
+ */
+export const getSendTeamInvitationUrl = () => {
+  return `/api/teams/invite`;
+};
+
+export const sendTeamInvitation = async (
+  teamInvitation: TeamInvitation,
+  options?: RequestInit,
+): Promise<Notification> => {
+  return customFetch<Notification>(getSendTeamInvitationUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(teamInvitation),
+  });
+};
+
+export const getSendTeamInvitationMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendTeamInvitation>>,
+    TError,
+    { data: BodyType<TeamInvitation> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendTeamInvitation>>,
+  TError,
+  { data: BodyType<TeamInvitation> },
+  TContext
+> => {
+  const mutationKey = ["sendTeamInvitation"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendTeamInvitation>>,
+    { data: BodyType<TeamInvitation> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return sendTeamInvitation(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendTeamInvitationMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendTeamInvitation>>
+>;
+export type SendTeamInvitationMutationBody = BodyType<TeamInvitation>;
+export type SendTeamInvitationMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Send a team invitation that creates a push notification for the invitee
+ */
+export const useSendTeamInvitation = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendTeamInvitation>>,
+    TError,
+    { data: BodyType<TeamInvitation> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendTeamInvitation>>,
+  TError,
+  { data: BodyType<TeamInvitation> },
+  TContext
+> => {
+  return useMutation(getSendTeamInvitationMutationOptions(options));
+};
+
+/**
+ * @summary Update project status; emits a push notification for members
+ */
+export const getUpdateProjectStatusUrl = (projectId: string) => {
+  return `/api/projects/${projectId}/status`;
+};
+
+export const updateProjectStatus = async (
+  projectId: string,
+  projectStatusUpdate: ProjectStatusUpdate,
+  options?: RequestInit,
+): Promise<Project> => {
+  return customFetch<Project>(getUpdateProjectStatusUrl(projectId), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(projectStatusUpdate),
+  });
+};
+
+export const getUpdateProjectStatusMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateProjectStatus>>,
+    TError,
+    { projectId: string; data: BodyType<ProjectStatusUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateProjectStatus>>,
+  TError,
+  { projectId: string; data: BodyType<ProjectStatusUpdate> },
+  TContext
+> => {
+  const mutationKey = ["updateProjectStatus"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateProjectStatus>>,
+    { projectId: string; data: BodyType<ProjectStatusUpdate> }
+  > = (props) => {
+    const { projectId, data } = props ?? {};
+
+    return updateProjectStatus(projectId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateProjectStatusMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateProjectStatus>>
+>;
+export type UpdateProjectStatusMutationBody = BodyType<ProjectStatusUpdate>;
+export type UpdateProjectStatusMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update project status; emits a push notification for members
+ */
+export const useUpdateProjectStatus = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateProjectStatus>>,
+    TError,
+    { projectId: string; data: BodyType<ProjectStatusUpdate> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateProjectStatus>>,
+  TError,
+  { projectId: string; data: BodyType<ProjectStatusUpdate> },
+  TContext
+> => {
+  return useMutation(getUpdateProjectStatusMutationOptions(options));
 };
 
 /**

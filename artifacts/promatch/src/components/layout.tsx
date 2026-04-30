@@ -37,10 +37,18 @@ import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ChatbotWidget } from "@/components/chatbot-widget";
+import { NotificationWatcher } from "@/components/notification-watcher";
+import { getListNotificationsQueryKey } from "@workspace/api-client-react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useGetSession();
-  const { data: notifications } = useListNotifications();
+  const { data: notifications } = useListNotifications({
+    query: {
+      queryKey: getListNotificationsQueryKey(),
+      refetchInterval: 5000,
+      refetchOnWindowFocus: true,
+    },
+  });
   const switchRole = useSwitchRole();
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
@@ -256,6 +264,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       </main>
 
       <ChatbotWidget />
+      <NotificationWatcher />
     </div>
   );
 }
