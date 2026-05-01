@@ -117,7 +117,7 @@ export function AuthLayout({ children, title, subtitle }: AuthLayoutProps) {
           {/* Mobile logo */}
           <div className="lg:hidden flex items-center gap-2 mb-8 justify-center">
             <div className="w-9 h-9 rounded-xl bg-primary flex items-center justify-center">
-              <Sparkles className="w-4.5 h-4.5 text-white" />
+              <Sparkles className="w-[18px] h-[18px] text-white" />
             </div>
             <span className="font-bold text-xl text-primary tracking-tight">PROMATCH</span>
           </div>

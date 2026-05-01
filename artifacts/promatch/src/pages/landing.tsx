@@ -288,8 +288,8 @@ export default function LandingPage() {
               return (
                 <FadeIn key={f.title} delay={i * 0.1}>
                   <motion.div
-                    whileHover={{ y: -4, shadow: "0 20px 40px rgba(0,0,0,0.1)" }}
-                    className="group relative rounded-2xl border border-border/60 bg-card p-6 shadow-sm hover:shadow-md transition-all duration-300"
+                    whileHover={{ y: -4, boxShadow: "0 20px 40px rgba(0,0,0,0.10)" }}
+                    className="group relative rounded-2xl border border-border/60 bg-card p-6 shadow-sm transition-all duration-300"
                   >
                     <div className={`w-12 h-12 rounded-xl ${f.color} flex items-center justify-center mb-4 transition-transform group-hover:scale-110 duration-300`}>
                       <Icon className="w-6 h-6" />
@@ -386,7 +386,7 @@ export default function LandingPage() {
         <div className="max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2 text-primary font-bold text-lg tracking-tight">
-              <Sparkles className="w-4.5 h-4.5" />
+              <Sparkles className="w-[18px] h-[18px]" />
               PROMATCH
             </div>
             <div className="flex items-center gap-6 text-sm text-muted-foreground">
