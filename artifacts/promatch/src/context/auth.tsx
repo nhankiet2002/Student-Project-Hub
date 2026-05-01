@@ -40,8 +40,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const registerMutation = useRegisterUser();
 
   const login = async (email: string, password: string) => {
-    await loginMutation.mutateAsync({ data: { email, password } });
-    await queryClient.invalidateQueries({ queryKey: getGetSessionQueryKey() });
+    const userData = await loginMutation.mutateAsync({ data: { email, password } });
+    // Set user data directly from response so it's immediately available before navigation
+    queryClient.setQueryData(getGetSessionQueryKey(), userData);
+    await queryClient.refetchQueries({ queryKey: getGetSessionQueryKey() });
   };
 
   const logout = async () => {

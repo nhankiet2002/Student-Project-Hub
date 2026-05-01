@@ -503,6 +503,37 @@ function NewConversationDialog({
   );
 }
 
+const ROLE_LABELS_LONG: Record<string, string> = {
+  student: "Sinh viên",
+  instructor: "Giảng viên",
+  enterprise: "Doanh nghiệp",
+  admin: "Quản trị viên",
+};
+
+interface ConvMember {
+  id: string;
+  name: string;
+  avatarUrl?: string | null;
+  role: string;
+  organization?: string | null;
+  isCreator: boolean;
+}
+
+function useMembersPanel(conversationId: string | null) {
+  const [members, setMembers] = useState<ConvMember[]>([]);
+  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!conversationId) { setMembers([]); return; }
+    setLoading(true);
+    fetch(`/api/conversations/${conversationId}/members`)
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setMembers(Array.isArray(data) ? data : []))
+      .catch(() => setMembers([]))
+      .finally(() => setLoading(false));
+  }, [conversationId]);
+  return { members, loading };
+}
+
 export default function Messages() {
   const { data: session } = useGetSession();
   const qc = useQueryClient();
@@ -513,6 +544,7 @@ export default function Messages() {
   const [search, setSearch] = useState("");
   const [draft, setDraft] = useState("");
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(true);
+  const [showMembers, setShowMembers] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -532,6 +564,8 @@ export default function Messages() {
       },
     }
   );
+
+  const { members: convMembers, loading: membersLoading } = useMembersPanel(selectedId);
 
   const sendMut = useSendMessage({
     mutation: {
@@ -557,6 +591,8 @@ export default function Messages() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => { setShowMembers(false); }, [selectedId]);
 
   const handleSend = useCallback(() => {
     const text = draft.trim();
@@ -636,8 +672,71 @@ export default function Messages() {
     </div>
   );
 
+  const MembersPanel = selectedConv && showMembers && (
+    <div className="w-72 flex-shrink-0 border-l bg-card flex flex-col">
+      <div className="flex items-center justify-between px-4 h-16 border-b">
+        <div className="flex items-center gap-2">
+          <Users className="w-4 h-4 text-muted-foreground" />
+          <span className="font-semibold text-sm">Thành viên</span>
+        </div>
+        <Button variant="ghost" size="icon" className="w-7 h-7" onClick={() => setShowMembers(false)}>
+          <X className="w-4 h-4" />
+        </Button>
+      </div>
+      <ScrollArea className="flex-1 p-3">
+        {membersLoading ? (
+          <div className="text-center text-sm text-muted-foreground py-8">Đang tải...</div>
+        ) : convMembers.length === 0 ? (
+          <div className="text-center text-sm text-muted-foreground py-8">Không có thành viên</div>
+        ) : (
+          <div className="space-y-1">
+            {convMembers.filter(m => m.isCreator).map(m => (
+              <div key={m.id} className="flex items-center gap-3 px-2 py-2.5 rounded-lg bg-primary/5 border border-primary/10">
+                <div className={`w-9 h-9 rounded-full ${avatarColor(m.id)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
+                  {avatarInitials(m.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                    {m.name}
+                    {m.id === currentUserId && <span className="text-[10px] text-muted-foreground">(Bạn)</span>}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {m.organization ?? ROLE_LABELS_LONG[m.role] ?? m.role}
+                  </div>
+                </div>
+                <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-medium flex-shrink-0">
+                  {selectedConv.type === "direct" ? "Người tạo" : "Trưởng nhóm"}
+                </span>
+              </div>
+            ))}
+            {convMembers.filter(m => !m.isCreator).map(m => (
+              <div key={m.id} className="flex items-center gap-3 px-2 py-2.5 rounded-lg hover:bg-muted/50 transition-colors">
+                <div className={`w-9 h-9 rounded-full ${avatarColor(m.id)} flex items-center justify-center text-white text-xs font-semibold flex-shrink-0`}>
+                  {avatarInitials(m.name)}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate flex items-center gap-1.5">
+                    {m.name}
+                    {m.id === currentUserId && <span className="text-[10px] text-muted-foreground">(Bạn)</span>}
+                  </div>
+                  <div className="text-xs text-muted-foreground truncate">
+                    {m.organization ?? ROLE_LABELS_LONG[m.role] ?? m.role}
+                  </div>
+                </div>
+                <span className="text-[10px] text-muted-foreground px-1.5 py-0.5 rounded-full border flex-shrink-0">
+                  Thành viên
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </ScrollArea>
+    </div>
+  );
+
   const ChatArea = selectedConv ? (
     <div className="flex flex-col h-full">
+      {/* Header */}
       <div className="flex items-center gap-3 px-4 h-16 border-b bg-card flex-shrink-0">
         <Button
           variant="ghost"
@@ -661,8 +760,24 @@ export default function Messages() {
             Dự án
           </Badge>
         )}
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant={showMembers ? "secondary" : "ghost"}
+              size="icon"
+              className="w-8 h-8 flex-shrink-0"
+              onClick={() => setShowMembers(v => !v)}
+            >
+              <Users className="w-4 h-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>
+            {showMembers ? "Ẩn thành viên" : "Xem thành viên"}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
+      {/* Messages */}
       <ScrollArea className="flex-1 px-4 py-4">
         <div className="space-y-4">
           {messages.length === 0 ? (
@@ -695,6 +810,7 @@ export default function Messages() {
         </div>
       </ScrollArea>
 
+      {/* Input */}
       <div className="px-4 py-3 border-t bg-card flex-shrink-0">
         <div className="flex items-end gap-2">
           <Textarea
@@ -729,6 +845,7 @@ export default function Messages() {
 
   return (
     <div className="flex h-[calc(100vh-4rem)] overflow-hidden -m-4 sm:-m-6">
+      {/* Sidebar */}
       <div
         className={`w-full md:w-80 flex-shrink-0 flex flex-col ${
           mobileSidebarOpen ? "flex" : "hidden md:flex"
@@ -737,6 +854,7 @@ export default function Messages() {
         {Sidebar}
       </div>
 
+      {/* Chat area */}
       <div
         className={`flex-1 flex flex-col min-w-0 ${
           mobileSidebarOpen ? "hidden md:flex" : "flex"
@@ -744,6 +862,10 @@ export default function Messages() {
       >
         {ChatArea}
       </div>
+
+      {/* Members panel */}
+      {MembersPanel}
     </div>
   );
 }
+

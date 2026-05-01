@@ -83,7 +83,7 @@ export default function LoginPage() {
     setLoading(true);
     try {
       await login(email, password);
-      setLocation("/");
+      setLocation("/home");
     } catch (err: unknown) {
       const raw = err instanceof Error ? err.message : "";
       const msg = raw.replace(/^HTTP \d+ [^:]+: /, "") || "Email hoặc mật khẩu không đúng";
