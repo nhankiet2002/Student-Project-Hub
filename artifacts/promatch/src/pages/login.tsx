@@ -58,6 +58,7 @@ export default function LoginPage() {
   const [showPw, setShowPw] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
   const [loading, setLoading] = useState(false);
+  const [authError, setAuthError] = useState("");
 
   const errors = {
     email: touched.email
@@ -72,15 +73,29 @@ export default function LoginPage() {
 
   const isValid = isValidEmail(email) && password.length > 0;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setTouched({ email: true, password: true });
     if (!isValid) return;
+    setAuthError("");
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const res = await fetch(`${import.meta.env.BASE_URL}api/session/login`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+      if (res.ok) {
+        setLocation("/");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setAuthError(data.error ?? "Email không đúng hoặc tài khoản không tồn tại");
+      }
+    } catch {
+      setAuthError("Không thể kết nối máy chủ. Vui lòng thử lại.");
+    } finally {
       setLoading(false);
-      setLocation("/");
-    }, 1200);
+    }
   }
 
   return (
@@ -139,6 +154,27 @@ export default function LoginPage() {
             </button>
           </div>
           <FieldError message={errors.password} />
+        </div>
+
+        {/* Auth error */}
+        {authError && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-sm text-destructive"
+          >
+            {authError}
+          </motion.div>
+        )}
+
+        {/* Hint: available accounts */}
+        <div className="rounded-lg bg-muted/60 border border-border px-3 py-2.5 text-xs text-muted-foreground space-y-1">
+          <div className="font-medium text-foreground mb-1">Tài khoản demo:</div>
+          <div>Sinh viên: <span className="font-mono">minhanh@student.edu.vn</span></div>
+          <div>Giảng viên: <span className="font-mono">qbao@edu.vn</span></div>
+          <div>Doanh nghiệp: <span className="font-mono">partner@fpt-software.vn</span></div>
+          <div>Cựu sinh viên: <span className="font-mono">thuha@alumni.edu.vn</span></div>
+          <div>Quản trị (1 tài khoản): <span className="font-mono">admin@promatch.vn</span></div>
         </div>
 
         {/* Submit */}

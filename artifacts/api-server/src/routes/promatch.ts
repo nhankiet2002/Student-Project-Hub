@@ -38,27 +38,33 @@ const upload = multer({
 const router: IRouter = Router();
 
 function currentUser() {
-  return users.find((u) => u.id === sessionState.currentUserId) || users[0]!;
+  if (!sessionState.currentUserId) return null;
+  return users.find((u) => u.id === sessionState.currentUserId) ?? null;
+}
+
+function safeCurrentUser() {
+  return currentUser() ?? users[0]!;
 }
 
 // ===== Session =====
 router.get("/session/me", (_req, res) => {
-  res.json(currentUser());
+  const user = currentUser();
+  if (!user) { res.status(401).json({ error: "Chưa đăng nhập" }); return; }
+  res.json(user);
 });
 
-router.put("/session/me", (req, res) => {
-  const role = req.body?.role as string;
-  const map: Record<string, string> = {
-    student: "u_student",
-    instructor: "u_instructor",
-    enterprise: "u_enterprise",
-    alumni: "u_alumni",
-    admin: "u_admin",
-  };
-  if (map[role]) {
-    sessionState.currentUserId = map[role]!;
-  }
-  res.json(currentUser());
+router.post("/session/login", (req, res) => {
+  const email = (req.body?.email as string | undefined)?.trim().toLowerCase();
+  if (!email) { res.status(400).json({ error: "Email không hợp lệ" }); return; }
+  const found = users.find((u) => u.email.toLowerCase() === email);
+  if (!found) { res.status(401).json({ error: "Không tìm thấy tài khoản với email này" }); return; }
+  sessionState.currentUserId = found.id;
+  res.json(found);
+});
+
+router.post("/session/logout", (_req, res) => {
+  sessionState.currentUserId = null;
+  res.json({ ok: true });
 });
 
 // ===== Skills & Portfolio =====
@@ -171,7 +177,7 @@ router.post("/topics", (req, res) => {
     domain: body.domain || "Web Development",
     difficulty: body.difficulty || "intermediate",
     source: "student",
-    sourceLabel: currentUser().name,
+    sourceLabel: safeCurrentUser().name,
     requiredSkills: body.requiredSkills || [],
     teamSize: body.teamSize || 3,
     feasibility: "Khả thi",
@@ -188,7 +194,7 @@ router.post("/topics", (req, res) => {
 });
 
 router.get("/topics/recommend", (req, res) => {
-  const u = currentUser();
+  const u = safeCurrentUser();
   const portfolio = portfolios[u.id];
   const userSkills = new Set((portfolio?.skills || []).map((s) => s.skillId));
   const userInterests = new Set((portfolio?.interests || []).map((i) => i.toLowerCase()));
@@ -238,7 +244,7 @@ router.get("/topics/:topicId", (req, res) => {
 });
 
 router.post("/topics/ai-generate", (req, res) => {
-  const u = currentUser();
+  const u = safeCurrentUser();
   const used = aiQuotaByUser[u.id] || 0;
   if (used >= 10) {
     return res.status(429).json({ error: "Đã đạt giới hạn 10 lần/tháng" });
@@ -327,7 +333,7 @@ router.get("/calls", (req, res) => {
 
 router.post("/calls", (req, res) => {
   const body = req.body || {};
-  const u = currentUser();
+  const u = safeCurrentUser();
   const newCall: CallForProject = {
     id: `cf_${String(calls.length + 1).padStart(3, "0")}`,
     title: body.title || "Đặt hàng mới",
@@ -361,7 +367,7 @@ router.post("/calls/:callId/apply", (req, res) => {
   return res.json({
     id: `ap_${Date.now()}`,
     callId: c.id,
-    applicantName: currentUser().name,
+    applicantName: safeCurrentUser().name,
     message: req.body?.message || "",
     status: "submitted",
     appliedAt: new Date().toISOString(),
@@ -370,7 +376,7 @@ router.post("/calls/:callId/apply", (req, res) => {
 
 // ===== Teams =====
 router.get("/teams/recommend", (req, res) => {
-  const u = currentUser();
+  const u = safeCurrentUser();
   const myPortfolio = portfolios[u.id];
   const mySkills = new Set((myPortfolio?.skills || []).map((s) => s.skillId));
   const topicId = req.query.topicId as string | undefined;
@@ -438,7 +444,7 @@ router.post("/projects", (req, res) => {
   projects.unshift(newProject);
   projectDetails[newProject.id] = {
     project: newProject,
-    members: (body.memberIds || [currentUser().id]).map((uid: string, i: number) => {
+    members: (body.memberIds || [safeCurrentUser().id]).map((uid: string, i: number) => {
       const u = users.find((x) => x.id === uid);
       return {
         userId: uid,
@@ -451,7 +457,7 @@ router.post("/projects", (req, res) => {
     milestones: [],
     description: `Dự án mới được tạo với đề tài: ${topic?.title || ""}`,
     recentActivity: [
-      { id: `act_${Date.now()}`, message: "Đã tạo workspace dự án", timestamp: new Date().toISOString(), actor: currentUser().name },
+      { id: `act_${Date.now()}`, message: "Đã tạo workspace dự án", timestamp: new Date().toISOString(), actor: safeCurrentUser().name },
     ],
   };
   contributions[newProject.id] = projectDetails[newProject.id]!.members.map((m) => ({
@@ -535,7 +541,7 @@ router.post(
       mimeType: req.file.mimetype,
       size: req.file.size,
       uploadedAt: new Date().toISOString(),
-      uploadedBy: currentUser().name,
+      uploadedBy: safeCurrentUser().name,
       buffer: req.file.buffer,
     };
 
@@ -684,7 +690,7 @@ router.put("/projects/:projectId/status", (req, res) => {
       id: `act_${Date.now()}`,
       message: `Trạng thái dự án chuyển từ "${oldStatus}" sang "${newStatus}"`,
       timestamp: new Date().toISOString(),
-      actor: currentUser().name,
+      actor: safeCurrentUser().name,
     });
   }
   const statusLabels: Record<string, string> = {

@@ -1302,7 +1302,7 @@ export const moderation: ModerationItem[] = [
 
 export const aiQuotaByUser: Record<string, number> = {};
 
-export const sessionState: { currentUserId: string } = { currentUserId: "u_student" };
+export const sessionState: { currentUserId: string | null } = { currentUserId: null };
 
 export const taskAttachments: Map<string, TaskAttachmentFile[]> = new Map();
 

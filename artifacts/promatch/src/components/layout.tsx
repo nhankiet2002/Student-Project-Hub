@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { useGetSession, useSwitchRole, useListNotifications, useListConversations } from "@workspace/api-client-react";
-type UserRole = "student" | "instructor" | "enterprise" | "alumni" | "admin";
+import { useGetSession, useListNotifications, useListConversations } from "@workspace/api-client-react";
 import { 
   Bell, 
   BookOpen, 
@@ -12,6 +11,7 @@ import {
   Home, 
   LayoutDashboard, 
   Lightbulb, 
+  LogOut,
   Menu, 
   MessageSquare, 
   Settings, 
@@ -33,7 +33,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Badge } from "@/components/ui/badge";
 import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ChatbotWidget } from "@/components/chatbot-widget";
@@ -41,7 +40,7 @@ import { NotificationWatcher } from "@/components/notification-watcher";
 import { getListNotificationsQueryKey, getListConversationsQueryKey } from "@workspace/api-client-react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
-  const { data: session } = useGetSession();
+  const { data: session, isError: sessionError, isLoading: sessionLoading } = useGetSession();
   const { data: notifications } = useListNotifications({
     query: {
       queryKey: getListNotificationsQueryKey(),
@@ -49,10 +48,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       refetchOnWindowFocus: true,
     },
   });
-  const switchRole = useSwitchRole();
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  useEffect(() => {
+    if (!sessionLoading && sessionError) {
+      setLocation("/login");
+    }
+  }, [sessionLoading, sessionError, setLocation]);
+
+  const handleLogout = async () => {
+    await fetch(`${import.meta.env.BASE_URL}api/session/logout`, { method: "POST" });
+    queryClient.clear();
+    setLocation("/login");
+  };
 
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
 
@@ -67,15 +77,6 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     enterprise: "Doanh nghiệp",
     alumni: "Cựu sinh viên",
     admin: "Quản trị viên",
-  };
-
-  const handleRoleSwitch = (role: UserRole) => {
-    switchRole.mutate({ data: { role } }, {
-      onSuccess: () => {
-        queryClient.invalidateQueries();
-        setLocation("/");
-      }
-    });
   };
 
   const getNavItems = () => {
@@ -249,24 +250,25 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                   <ChevronDown className="w-4 h-4 text-muted-foreground ml-1" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
                 <div className="px-2 py-1.5 text-sm">
                   <div className="font-medium">{session.name}</div>
-                  <div className="text-muted-foreground">{session.email}</div>
+                  <div className="text-muted-foreground text-xs">{session.email}</div>
+                </div>
+                <div className="px-2 pb-1.5">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary">
+                    {roleLabels[session.role]}
+                  </span>
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuLabel>Chuyển đổi vai trò (Demo)</DropdownMenuLabel>
-                {Object.entries(roleLabels).map(([role, label]) => (
-                  <DropdownMenuItem 
-                    key={role} 
-                    onClick={() => handleRoleSwitch(role as UserRole)}
-                    className="flex justify-between items-center cursor-pointer"
-                  >
-                    {label}
-                    {session.role === role && <Badge variant="secondary" className="ml-2 text-[10px]">Hiện tại</Badge>}
-                  </DropdownMenuItem>
-                ))}
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Đăng xuất
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           )}
