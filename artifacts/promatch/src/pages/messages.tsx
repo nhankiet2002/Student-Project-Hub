@@ -248,7 +248,13 @@ function UserRow({
   );
 }
 
-function NewConversationDialog({ onCreated }: { onCreated: (conv: Conversation) => void }) {
+function NewConversationDialog({
+  onCreated,
+  conversations,
+}: {
+  onCreated: (conv: Conversation) => void;
+  conversations: Conversation[];
+}) {
   const [open, setOpen] = useState(false);
   const [type, setType] = useState<"group" | "direct">("direct");
   const [groupName, setGroupName] = useState("");
@@ -295,6 +301,15 @@ function NewConversationDialog({ onCreated }: { onCreated: (conv: Conversation) 
   }
 
   function handleSelectDirect(user: UserSearchResult) {
+    const existing = conversations.find(
+      (c) => c.type === "direct" && c.memberIds.includes(user.id),
+    );
+    if (existing) {
+      setOpen(false);
+      resetForm();
+      onCreated(existing);
+      return;
+    }
     createMut.mutate({
       data: { type: "direct", name: user.name, memberIds: [user.id] },
     });
@@ -578,7 +593,10 @@ export default function Messages() {
       <div className="p-4 border-b">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-bold text-base">Tin nhắn</h2>
-          <NewConversationDialog onCreated={(conv) => setSelectedId(conv.id)} />
+          <NewConversationDialog
+            conversations={conversations}
+            onCreated={(conv) => setSelectedId(conv.id)}
+          />
         </div>
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
