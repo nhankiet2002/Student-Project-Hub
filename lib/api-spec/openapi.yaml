@@ -826,8 +826,140 @@ paths:
               schema:
                 $ref: "#/components/schemas/AnalyticsOverview"
 
+  /conversations:
+    get:
+      operationId: listConversations
+      summary: List conversations for current user
+      responses:
+        "200":
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Conversation"
+    post:
+      operationId: createConversation
+      summary: Create a new conversation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [type, name, memberIds]
+              properties:
+                type:
+                  type: string
+                  enum: [group, direct]
+                name: { type: string }
+                memberIds:
+                  type: array
+                  items: { type: string }
+                projectId: { type: string, nullable: true }
+      responses:
+        "201":
+          description: Created conversation
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Conversation"
+
+  /conversations/{conversationId}/messages:
+    get:
+      operationId: listConversationMessages
+      summary: Get messages in a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of messages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChatMessage"
+    post:
+      operationId: sendMessage
+      summary: Send a message to a conversation
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [content]
+              properties:
+                content: { type: string }
+      responses:
+        "201":
+          description: Sent message
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChatMessage"
+
+  /conversations/{conversationId}/messages/{messageId}:
+    delete:
+      operationId: deleteMessage
+      summary: Delete a message
+      parameters:
+        - name: conversationId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: messageId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Deleted
+
 components:
   schemas:
+    Conversation:
+      type: object
+      required: [id, type, name, memberIds, unreadCount, createdAt]
+      properties:
+        id: { type: string }
+        type:
+          type: string
+          enum: [group, direct]
+        name: { type: string }
+        avatarUrl: { type: string, nullable: true }
+        memberIds:
+          type: array
+          items: { type: string }
+        projectId: { type: string, nullable: true }
+        lastMessage: { type: string, nullable: true }
+        lastMessageAt: { type: string, nullable: true }
+        unreadCount: { type: integer }
+        createdAt: { type: string }
+
+    ChatMessage:
+      type: object
+      required: [id, conversationId, senderId, senderName, content, sentAt, edited]
+      properties:
+        id: { type: string }
+        conversationId: { type: string }
+        senderId: { type: string }
+        senderName: { type: string }
+        senderAvatar: { type: string, nullable: true }
+        content: { type: string }
+        sentAt: { type: string }
+        edited: { type: boolean }
+
     HealthStatus:
       type: object
       required: [status]

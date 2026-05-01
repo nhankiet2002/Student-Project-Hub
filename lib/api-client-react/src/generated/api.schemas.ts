@@ -5,6 +5,38 @@
  * PROMATCH API
  * OpenAPI spec version: 0.1.0
  */
+export type ConversationType =
+  (typeof ConversationType)[keyof typeof ConversationType];
+
+export const ConversationType = {
+  group: "group",
+  direct: "direct",
+} as const;
+
+export interface Conversation {
+  id: string;
+  type: ConversationType;
+  name: string;
+  avatarUrl?: string | null;
+  memberIds: string[];
+  projectId?: string | null;
+  lastMessage?: string | null;
+  lastMessageAt?: string | null;
+  unreadCount: number;
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar?: string | null;
+  content: string;
+  sentAt: string;
+  edited: boolean;
+}
+
 export interface HealthStatus {
   status: string;
 }
@@ -709,4 +741,23 @@ export const ResolveModerationBodyAction = {
 export type ResolveModerationBody = {
   action: ResolveModerationBodyAction;
   note?: string;
+};
+
+export type CreateConversationBodyType =
+  (typeof CreateConversationBodyType)[keyof typeof CreateConversationBodyType];
+
+export const CreateConversationBodyType = {
+  group: "group",
+  direct: "direct",
+} as const;
+
+export type CreateConversationBody = {
+  type: CreateConversationBodyType;
+  name: string;
+  memberIds: string[];
+  projectId?: string | null;
+};
+
+export type SendMessageBody = {
+  content: string;
 };

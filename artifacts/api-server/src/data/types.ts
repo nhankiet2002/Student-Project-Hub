@@ -251,6 +251,32 @@ export interface Notification {
   link: string | null;
 }
 
+export type ConversationType = "group" | "direct";
+
+export interface Conversation {
+  id: string;
+  type: ConversationType;
+  name: string;
+  avatarUrl: string | null;
+  memberIds: string[];
+  projectId: string | null;
+  lastMessage: string | null;
+  lastMessageAt: string | null;
+  unreadCount: number;
+  createdAt: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string | null;
+  content: string;
+  sentAt: string;
+  edited: boolean;
+}
+
 export interface ModerationItem {
   id: string;
   contentType: "topic" | "project" | "comment" | "call";

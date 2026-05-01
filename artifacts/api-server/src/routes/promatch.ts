@@ -16,6 +16,8 @@ import {
   moderation,
   aiQuotaByUser,
   sessionState,
+  conversations,
+  chatMessages,
 } from "../data/store.js";
 
 import type {
@@ -795,6 +797,100 @@ router.get("/analytics/overview", (_req, res) => {
       { period: "HK2 2025", projects: 171, success: 88 },
     ],
   });
+});
+
+// ── Conversations ───────────────────────────────────────────────────────────
+router.get("/conversations", (req, res) => {
+  const uid = sessionState.currentUserId;
+  const myConvs = conversations
+    .filter((c) => c.memberIds.includes(uid))
+    .sort((a, b) => {
+      const ta = a.lastMessageAt ? new Date(a.lastMessageAt).getTime() : 0;
+      const tb = b.lastMessageAt ? new Date(b.lastMessageAt).getTime() : 0;
+      return tb - ta;
+    });
+  res.json(myConvs);
+});
+
+router.post("/conversations", (req, res) => {
+  const uid = sessionState.currentUserId;
+  const body = req.body as { type?: string; name?: string; memberIds?: string[]; projectId?: string };
+  const type = body.type === "direct" ? "direct" : "group";
+  const memberIds: string[] = Array.isArray(body.memberIds) ? body.memberIds : [];
+  if (!memberIds.includes(uid)) memberIds.push(uid);
+  const name = body.name ? String(body.name).slice(0, 100) : "Cuộc trò chuyện mới";
+  const conv = {
+    id: `conv_${Date.now()}`,
+    type: type as "group" | "direct",
+    name,
+    avatarUrl: null,
+    memberIds,
+    projectId: body.projectId ? String(body.projectId) : null,
+    lastMessage: null,
+    lastMessageAt: null,
+    unreadCount: 0,
+    createdAt: new Date().toISOString(),
+  };
+  conversations.push(conv);
+  chatMessages.set(conv.id, []);
+  res.status(201).json(conv);
+});
+
+router.get("/conversations/:conversationId/messages", (req, res) => {
+  const uid = sessionState.currentUserId;
+  const convId = String(req.params["conversationId"] ?? "");
+  const conv = conversations.find((c) => c.id === convId);
+  if (!conv) { res.status(404).json({ error: "Conversation not found" }); return; }
+  if (!conv.memberIds.includes(uid)) { res.status(403).json({ error: "Forbidden" }); return; }
+  conv.unreadCount = 0;
+  const msgs = chatMessages.get(convId) ?? [];
+  res.json(msgs);
+});
+
+router.post("/conversations/:conversationId/messages", (req, res) => {
+  const uid = sessionState.currentUserId;
+  const convId = String(req.params["conversationId"] ?? "");
+  const conv = conversations.find((c) => c.id === convId);
+  if (!conv) { res.status(404).json({ error: "Conversation not found" }); return; }
+  if (!conv.memberIds.includes(uid)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const content = req.body?.content ? String(req.body.content).slice(0, 2000) : null;
+  if (!content) { res.status(400).json({ error: "content is required" }); return; }
+  const sender = users.find((u) => u.id === uid)!;
+  const msg = {
+    id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+    conversationId: convId,
+    senderId: uid,
+    senderName: sender.name,
+    senderAvatar: sender.avatarUrl,
+    content,
+    sentAt: new Date().toISOString(),
+    edited: false,
+  };
+  const list = chatMessages.get(convId) ?? [];
+  list.push(msg);
+  chatMessages.set(convId, list);
+  conv.lastMessage = content;
+  conv.lastMessageAt = msg.sentAt;
+  res.status(201).json(msg);
+});
+
+router.delete("/conversations/:conversationId/messages/:messageId", (req, res) => {
+  const uid = sessionState.currentUserId;
+  const convId = String(req.params["conversationId"] ?? "");
+  const msgId = String(req.params["messageId"] ?? "");
+  const conv = conversations.find((c) => c.id === convId);
+  if (!conv) { res.status(404).json({ error: "Conversation not found" }); return; }
+  if (!conv.memberIds.includes(uid)) { res.status(403).json({ error: "Forbidden" }); return; }
+  const list = chatMessages.get(convId) ?? [];
+  const idx = list.findIndex((m) => m.id === msgId);
+  if (idx === -1) { res.status(404).json({ error: "Message not found" }); return; }
+  if (list[idx]!.senderId !== uid) { res.status(403).json({ error: "Not your message" }); return; }
+  list.splice(idx, 1);
+  chatMessages.set(convId, list);
+  const last = list[list.length - 1];
+  conv.lastMessage = last?.content ?? null;
+  conv.lastMessageAt = last?.sentAt ?? null;
+  res.status(204).end();
 });
 
 export default router;

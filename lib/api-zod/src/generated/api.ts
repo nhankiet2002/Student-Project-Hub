@@ -1099,3 +1099,72 @@ export const GetAnalyticsOverviewResponse = zod.object({
     }),
   ),
 });
+
+/**
+ * @summary List conversations for current user
+ */
+export const ListConversationsResponseItem = zod.object({
+  id: zod.string(),
+  type: zod.enum(["group", "direct"]),
+  name: zod.string(),
+  avatarUrl: zod.string().nullish(),
+  memberIds: zod.array(zod.string()),
+  projectId: zod.string().nullish(),
+  lastMessage: zod.string().nullish(),
+  lastMessageAt: zod.string().nullish(),
+  unreadCount: zod.number(),
+  createdAt: zod.string(),
+});
+export const ListConversationsResponse = zod.array(
+  ListConversationsResponseItem,
+);
+
+/**
+ * @summary Create a new conversation
+ */
+export const CreateConversationBody = zod.object({
+  type: zod.enum(["group", "direct"]),
+  name: zod.string(),
+  memberIds: zod.array(zod.string()),
+  projectId: zod.string().nullish(),
+});
+
+/**
+ * @summary Get messages in a conversation
+ */
+export const ListConversationMessagesParams = zod.object({
+  conversationId: zod.coerce.string(),
+});
+
+export const ListConversationMessagesResponseItem = zod.object({
+  id: zod.string(),
+  conversationId: zod.string(),
+  senderId: zod.string(),
+  senderName: zod.string(),
+  senderAvatar: zod.string().nullish(),
+  content: zod.string(),
+  sentAt: zod.string(),
+  edited: zod.boolean(),
+});
+export const ListConversationMessagesResponse = zod.array(
+  ListConversationMessagesResponseItem,
+);
+
+/**
+ * @summary Send a message to a conversation
+ */
+export const SendMessageParams = zod.object({
+  conversationId: zod.coerce.string(),
+});
+
+export const SendMessageBody = zod.object({
+  content: zod.string(),
+});
+
+/**
+ * @summary Delete a message
+ */
+export const DeleteMessageParams = zod.object({
+  conversationId: zod.coerce.string(),
+  messageId: zod.coerce.string(),
+});

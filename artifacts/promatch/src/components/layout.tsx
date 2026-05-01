@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useGetSession, useSwitchRole, useListNotifications } from "@workspace/api-client-react";
+import { useGetSession, useSwitchRole, useListNotifications, useListConversations } from "@workspace/api-client-react";
 type UserRole = "student" | "instructor" | "enterprise" | "alumni" | "admin";
 import { 
   Bell, 
@@ -38,7 +38,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ChatbotWidget } from "@/components/chatbot-widget";
 import { NotificationWatcher } from "@/components/notification-watcher";
-import { getListNotificationsQueryKey } from "@workspace/api-client-react";
+import { getListNotificationsQueryKey, getListConversationsQueryKey } from "@workspace/api-client-react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session } = useGetSession();
@@ -55,6 +55,11 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
+
+  const { data: conversations } = useListConversations({
+    query: { queryKey: getListConversationsQueryKey(), refetchInterval: 5000 },
+  });
+  const totalMsgUnread = conversations?.reduce((sum, c) => sum + c.unreadCount, 0) ?? 0;
 
   const roleLabels: Record<string, string> = {
     student: "Sinh viên",
@@ -90,6 +95,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           { href: "/topics/ai", label: "Sinh đề tài AI", icon: Sparkles },
           { href: "/projects", label: "Dự án của tôi", icon: FolderKanban },
           { href: "/teams", label: "Tìm thành viên", icon: Users },
+          { href: "/messages", label: "Tin nhắn", icon: MessageSquare, badge: totalMsgUnread },
           { href: "/marketplace", label: "Đặt hàng từ DN", icon: Briefcase },
           { href: "/portfolio", label: "Hồ sơ năng lực", icon: BookOpen },
         ];
@@ -97,6 +103,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         return [
           { href: "/", label: "Bảng điều khiển", icon: LayoutDashboard },
           { href: "/instructor", label: "Quản lý lớp", icon: Users },
+          { href: "/messages", label: "Tin nhắn", icon: MessageSquare, badge: totalMsgUnread },
           { href: "/analytics", label: "Phân tích & Xu hướng", icon: ChartBar },
           { href: "/knowledge", label: "Kho tri thức", icon: BookOpen },
           { href: "/portfolio", label: "Hồ sơ giảng viên", icon: UserCircle },
@@ -105,7 +112,8 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         return [
           { href: "/", label: "Bảng điều khiển", icon: LayoutDashboard },
           { href: "/marketplace", label: "Tất cả đặt hàng", icon: Briefcase },
-          { href: "/marketplace/new", label: "Tạo đặt hàng mới", icon: MessageSquare },
+          { href: "/marketplace/new", label: "Tạo đặt hàng mới", icon: Briefcase },
+          { href: "/messages", label: "Tin nhắn", icon: MessageSquare, badge: totalMsgUnread },
           { href: "/portfolio", label: "Hồ sơ doanh nghiệp", icon: Building2 },
         ];
       case "admin":
@@ -120,6 +128,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           { href: "/", label: "Trang chủ", icon: Home },
           { href: "/knowledge", label: "Kho tri thức", icon: BookOpen },
           { href: "/topics", label: "Khám phá đề tài", icon: Compass },
+          { href: "/messages", label: "Tin nhắn", icon: MessageSquare, badge: totalMsgUnread },
         ];
       default:
         return baseItems;
@@ -133,6 +142,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       {navItems.map((item) => {
         const isActive = location === item.href;
         const Icon = item.icon;
+        const badge = (item as { badge?: number }).badge;
         return (
           <Link
             key={item.href}
@@ -145,7 +155,12 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
             }`}
           >
             <Icon className="w-5 h-5" />
-            {item.label}
+            <span className="flex-1">{item.label}</span>
+            {badge != null && badge > 0 && (
+              <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                {badge > 99 ? "99+" : badge}
+              </span>
+            )}
           </Link>
         );
       })}

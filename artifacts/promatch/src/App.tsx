@@ -28,6 +28,7 @@ import Admin from "@/pages/admin";
 import AdminUsers from "@/pages/admin-users";
 import AdminModeration from "@/pages/admin-moderation";
 import Settings from "@/pages/settings";
+import Messages from "@/pages/messages";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +58,7 @@ function Router() {
         <Route path="/admin" component={Admin} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/moderation" component={AdminModeration} />
+        <Route path="/messages" component={Messages} />
         <Route path="/settings" component={Settings} />
         <Route component={NotFound} />
       </Switch>
