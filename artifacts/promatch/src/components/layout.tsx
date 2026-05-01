@@ -4,7 +4,6 @@ import { useGetSession, useSwitchRole, useListNotifications, useListConversation
 import { useAuth } from "@/context/auth";
 type UserRole = "student" | "instructor" | "enterprise" | "alumni" | "admin";
 import { 
-  Bell, 
   BookOpen, 
   Briefcase, 
   ChartBar, 
@@ -41,6 +40,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { ChatbotWidget } from "@/components/chatbot-widget";
 import { NotificationWatcher } from "@/components/notification-watcher";
+import { NotificationPopover } from "@/components/notification-popover";
 import { getListNotificationsQueryKey, getListConversationsQueryKey } from "@workspace/api-client-react";
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
@@ -229,12 +229,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         {/* Topbar */}
         <header className="h-16 border-b bg-card flex items-center justify-end px-4 sm:px-6 sticky top-0 z-40 gap-4">
           
-          <Button variant="ghost" size="icon" className="relative" onClick={() => setLocation('/notifications')}>
-            <Bell className="w-5 h-5 text-muted-foreground" />
-            {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-destructive rounded-full" />
-            )}
-          </Button>
+          <NotificationPopover unreadCount={unreadCount} />
 
           {session && (
             <DropdownMenu>
