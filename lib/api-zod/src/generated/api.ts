@@ -894,6 +894,41 @@ export const SendTeamInvitationBody = zod.object({
   message: zod.string().nullish(),
 });
 
+export const ListTaskAttachmentsParams = zod.object({
+  taskId: zod.coerce.string(),
+});
+
+export const ListTaskAttachmentsResponseItem = zod.object({
+  id: zod.string(),
+  taskId: zod.string(),
+  filename: zod.string(),
+  mimeType: zod.string(),
+  size: zod.number().describe("File size in bytes"),
+  uploadedAt: zod.string(),
+  uploadedBy: zod.string(),
+});
+export const ListTaskAttachmentsResponse = zod.array(
+  ListTaskAttachmentsResponseItem,
+);
+
+export const UploadTaskAttachmentParams = zod.object({
+  taskId: zod.coerce.string(),
+});
+
+export const UploadTaskAttachmentBody = zod.object({
+  file: zod.instanceof(File),
+});
+
+export const DeleteTaskAttachmentParams = zod.object({
+  taskId: zod.coerce.string(),
+  attachmentId: zod.coerce.string(),
+});
+
+export const DownloadTaskAttachmentParams = zod.object({
+  taskId: zod.coerce.string(),
+  attachmentId: zod.coerce.string(),
+});
+
 /**
  * @summary Update project status; emits a push notification for members
  */

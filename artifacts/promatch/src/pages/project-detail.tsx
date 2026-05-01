@@ -14,12 +14,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CheckCircle2, Clock, Calendar, AlertCircle, Plus, MoreHorizontal } from "lucide-react";
+import { CheckCircle2, Clock, Calendar, AlertCircle, Plus, MoreHorizontal, Paperclip } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, Cell } from "recharts";
+import { TaskAttachmentDialog } from "@/components/task-attachment-dialog";
+import type { Task } from "@workspace/api-client-react";
 
 export default function ProjectDetail() {
   const { projectId } = useParams<{ projectId: string }>();
@@ -29,6 +31,7 @@ export default function ProjectDetail() {
   
   const [isCreateTaskOpen, setIsCreateTaskOpen] = useState(false);
   const [newTask, setNewTask] = useState({ title: "", description: "", assigneeId: "" });
+  const [attachmentTask, setAttachmentTask] = useState<Task | null>(null);
   
   const queryClient = useQueryClient();
 
@@ -270,10 +273,19 @@ export default function ProjectDetail() {
                       <Card key={task.id} className="shadow-sm">
                         <CardContent className="p-3 space-y-2">
                           <div className="font-medium text-sm line-clamp-2">{task.title}</div>
-                          <div className="flex justify-between items-center mt-2">
-                            <span className="text-xs text-muted-foreground truncate flex-1 mr-2" title={task.assigneeName}>
+                          <div className="flex justify-between items-center mt-2 gap-1">
+                            <span className="text-xs text-muted-foreground truncate flex-1" title={task.assigneeName}>
                               {task.assigneeName || "Chưa phân công"}
                             </span>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 shrink-0 text-muted-foreground hover:text-violet-600"
+                              title="Tệp đính kèm"
+                              onClick={() => setAttachmentTask(task)}
+                            >
+                              <Paperclip className="h-3.5 w-3.5" />
+                            </Button>
                             <Select value={task.status} onValueChange={(v) => handleUpdateTaskStatus(task.id, v)}>
                               <SelectTrigger className="w-[30px] h-6 p-0 border-none bg-transparent shadow-none">
                                 <MoreHorizontal className="w-4 h-4" />
@@ -416,6 +428,18 @@ export default function ProjectDetail() {
           </TabsContent>
         </div>
       </Tabs>
+
+      {attachmentTask && (
+        <TaskAttachmentDialog
+          open={!!attachmentTask}
+          onOpenChange={(open) => { if (!open) setAttachmentTask(null); }}
+          taskId={attachmentTask.id}
+          taskTitle={attachmentTask.title}
+          taskStatus={attachmentTask.status}
+          taskDescription={attachmentTask.description}
+          assigneeName={attachmentTask.assigneeName}
+        />
+      )}
     </div>
   );
 }

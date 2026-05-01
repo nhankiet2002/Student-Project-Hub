@@ -1,4 +1,5 @@
 import { Router, type IRouter } from "express";
+import multer from "multer";
 import {
   skills,
   users,
@@ -8,6 +9,7 @@ import {
   projects,
   projectDetails,
   tasks,
+  taskAttachments,
   contributions,
   archived,
   notifications,
@@ -15,14 +17,21 @@ import {
   aiQuotaByUser,
   sessionState,
 } from "../data/store.js";
+
 import type {
   Topic,
   CallForProject,
   Project,
   Task,
+  TaskAttachmentFile,
   Notification,
   Portfolio,
 } from "../data/types.js";
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 20 * 1024 * 1024 },
+});
 
 const router: IRouter = Router();
 
@@ -499,6 +508,63 @@ router.put("/tasks/:taskId", (req, res) => {
   }
   if (body.dueDate !== undefined) t.dueDate = body.dueDate;
   return res.json(t);
+});
+
+// ===== Task Attachments =====
+router.get("/tasks/:taskId/attachments", (req, res) => {
+  const taskId = req.params.taskId!;
+  const list = (taskAttachments.get(taskId) ?? []).map(({ buffer: _buffer, ...meta }) => meta);
+  res.json(list);
+});
+
+router.post(
+  "/tasks/:taskId/attachments",
+  upload.single("file"),
+  (req, res) => {
+    const taskId = String(req.params["taskId"] ?? "");
+    const task = tasks.find((t) => t.id === taskId);
+    if (!task) return res.status(404).json({ error: "Task not found" });
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+
+    const entry: TaskAttachmentFile = {
+      id: `att_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`,
+      taskId,
+      filename: req.file.originalname,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: currentUser().name,
+      buffer: req.file.buffer,
+    };
+
+    const list = taskAttachments.get(taskId) ?? [];
+    list.push(entry);
+    taskAttachments.set(taskId, list);
+
+    const { buffer: _buffer, ...meta } = entry;
+    return res.status(201).json(meta);
+  },
+);
+
+router.delete("/tasks/:taskId/attachments/:attachmentId", (req, res) => {
+  const { taskId, attachmentId } = req.params as { taskId: string; attachmentId: string };
+  const list = taskAttachments.get(taskId);
+  if (!list) return res.status(404).json({ error: "Not found" });
+  const idx = list.findIndex((a) => a.id === attachmentId);
+  if (idx === -1) return res.status(404).json({ error: "Not found" });
+  list.splice(idx, 1);
+  return res.status(204).send();
+});
+
+router.get("/tasks/:taskId/attachments/:attachmentId/download", (req, res) => {
+  const { taskId, attachmentId } = req.params as { taskId: string; attachmentId: string };
+  const list = taskAttachments.get(taskId);
+  const entry = list?.find((a) => a.id === attachmentId);
+  if (!entry) return res.status(404).json({ error: "Not found" });
+  res.setHeader("Content-Type", entry.mimeType);
+  res.setHeader("Content-Disposition", `attachment; filename*=UTF-8''${encodeURIComponent(entry.filename)}`);
+  res.setHeader("Content-Length", entry.size);
+  return res.send(entry.buffer);
 });
 
 router.get("/projects/:projectId/contributions", (req, res) => {

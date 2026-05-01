@@ -606,6 +606,90 @@ paths:
               schema:
                 $ref: "#/components/schemas/Notification"
 
+  /tasks/{taskId}/attachments:
+    get:
+      operationId: listTaskAttachments
+      tags: [tasks]
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: List of attachments for the task
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TaskAttachment"
+    post:
+      operationId: uploadTaskAttachment
+      tags: [tasks]
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        "201":
+          description: Attachment created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaskAttachment"
+
+  /tasks/{taskId}/attachments/{attachmentId}:
+    delete:
+      operationId: deleteTaskAttachment
+      tags: [tasks]
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: attachmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: Deleted
+
+  /tasks/{taskId}/attachments/{attachmentId}/download:
+    get:
+      operationId: downloadTaskAttachment
+      tags: [tasks]
+      parameters:
+        - name: taskId
+          in: path
+          required: true
+          schema: { type: string }
+        - name: attachmentId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: File download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+
   /projects/{projectId}/status:
     put:
       operationId: updateProjectStatus
@@ -1234,6 +1318,18 @@ components:
         read: { type: boolean }
         createdAt: { type: string }
         link: { type: string, nullable: true }
+
+    TaskAttachment:
+      type: object
+      required: [id, taskId, filename, mimeType, size, uploadedAt, uploadedBy]
+      properties:
+        id: { type: string }
+        taskId: { type: string }
+        filename: { type: string }
+        mimeType: { type: string }
+        size: { type: integer, description: "File size in bytes" }
+        uploadedAt: { type: string }
+        uploadedBy: { type: string }
 
     TeamInvitation:
       type: object

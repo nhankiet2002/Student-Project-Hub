@@ -490,6 +490,17 @@ export interface Notification {
   link?: string | null;
 }
 
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  filename: string;
+  mimeType: string;
+  /** File size in bytes */
+  size: number;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
 export interface TeamInvitation {
   /** Topic the team is forming around */
   topicTitle: string;
@@ -663,6 +674,10 @@ export type ListKnowledgeParams = {
 
 export type MarkAllNotificationsRead200 = {
   count: number;
+};
+
+export type UploadTaskAttachmentBody = {
+  file: Blob;
 };
 
 export type ListUsersParams = {

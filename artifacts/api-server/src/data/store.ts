@@ -8,6 +8,7 @@ import type {
   Project,
   ProjectDetail,
   Task,
+  TaskAttachmentFile,
   ContributionMetric,
   ArchivedProject,
   Notification,
@@ -1300,3 +1301,5 @@ export const moderation: ModerationItem[] = [
 export const aiQuotaByUser: Record<string, number> = {};
 
 export const sessionState: { currentUserId: string } = { currentUserId: "u_student" };
+
+export const taskAttachments: Map<string, TaskAttachmentFile[]> = new Map();

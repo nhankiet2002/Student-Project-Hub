@@ -197,6 +197,20 @@ export interface Task {
   createdAt: string;
 }
 
+export interface TaskAttachment {
+  id: string;
+  taskId: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  uploadedAt: string;
+  uploadedBy: string;
+}
+
+export interface TaskAttachmentFile extends TaskAttachment {
+  buffer: Buffer;
+}
+
 export interface ContributionMetric {
   userId: string;
   name: string;

@@ -49,6 +49,7 @@ import type {
   Skill,
   SwitchRoleBody,
   Task,
+  TaskAttachment,
   TaskCreate,
   TaskUpdate,
   TeamInvitation,
@@ -58,6 +59,7 @@ import type {
   TopicRecommendation,
   TrendItem,
   UpdateUserStatusBody,
+  UploadTaskAttachmentBody,
   User,
 } from "./api.schemas";
 
@@ -2617,6 +2619,350 @@ export const useSendTeamInvitation = <
 > => {
   return useMutation(getSendTeamInvitationMutationOptions(options));
 };
+
+export const getListTaskAttachmentsUrl = (taskId: string) => {
+  return `/api/tasks/${taskId}/attachments`;
+};
+
+export const listTaskAttachments = async (
+  taskId: string,
+  options?: RequestInit,
+): Promise<TaskAttachment[]> => {
+  return customFetch<TaskAttachment[]>(getListTaskAttachmentsUrl(taskId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListTaskAttachmentsQueryKey = (taskId: string) => {
+  return [`/api/tasks/${taskId}/attachments`] as const;
+};
+
+export const getListTaskAttachmentsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listTaskAttachments>>,
+  TError = ErrorType<unknown>,
+>(
+  taskId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listTaskAttachments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListTaskAttachmentsQueryKey(taskId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listTaskAttachments>>
+  > = ({ signal }) =>
+    listTaskAttachments(taskId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!taskId,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listTaskAttachments>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListTaskAttachmentsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listTaskAttachments>>
+>;
+export type ListTaskAttachmentsQueryError = ErrorType<unknown>;
+
+export function useListTaskAttachments<
+  TData = Awaited<ReturnType<typeof listTaskAttachments>>,
+  TError = ErrorType<unknown>,
+>(
+  taskId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listTaskAttachments>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListTaskAttachmentsQueryOptions(taskId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+export const getUploadTaskAttachmentUrl = (taskId: string) => {
+  return `/api/tasks/${taskId}/attachments`;
+};
+
+export const uploadTaskAttachment = async (
+  taskId: string,
+  uploadTaskAttachmentBody: UploadTaskAttachmentBody,
+  options?: RequestInit,
+): Promise<TaskAttachment> => {
+  const formData = new FormData();
+  formData.append(`file`, uploadTaskAttachmentBody.file);
+
+  return customFetch<TaskAttachment>(getUploadTaskAttachmentUrl(taskId), {
+    ...options,
+    method: "POST",
+    body: formData,
+  });
+};
+
+export const getUploadTaskAttachmentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadTaskAttachment>>,
+    TError,
+    { taskId: string; data: BodyType<UploadTaskAttachmentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof uploadTaskAttachment>>,
+  TError,
+  { taskId: string; data: BodyType<UploadTaskAttachmentBody> },
+  TContext
+> => {
+  const mutationKey = ["uploadTaskAttachment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof uploadTaskAttachment>>,
+    { taskId: string; data: BodyType<UploadTaskAttachmentBody> }
+  > = (props) => {
+    const { taskId, data } = props ?? {};
+
+    return uploadTaskAttachment(taskId, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UploadTaskAttachmentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof uploadTaskAttachment>>
+>;
+export type UploadTaskAttachmentMutationBody =
+  BodyType<UploadTaskAttachmentBody>;
+export type UploadTaskAttachmentMutationError = ErrorType<unknown>;
+
+export const useUploadTaskAttachment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof uploadTaskAttachment>>,
+    TError,
+    { taskId: string; data: BodyType<UploadTaskAttachmentBody> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof uploadTaskAttachment>>,
+  TError,
+  { taskId: string; data: BodyType<UploadTaskAttachmentBody> },
+  TContext
+> => {
+  return useMutation(getUploadTaskAttachmentMutationOptions(options));
+};
+
+export const getDeleteTaskAttachmentUrl = (
+  taskId: string,
+  attachmentId: string,
+) => {
+  return `/api/tasks/${taskId}/attachments/${attachmentId}`;
+};
+
+export const deleteTaskAttachment = async (
+  taskId: string,
+  attachmentId: string,
+  options?: RequestInit,
+): Promise<void> => {
+  return customFetch<void>(getDeleteTaskAttachmentUrl(taskId, attachmentId), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteTaskAttachmentMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTaskAttachment>>,
+    TError,
+    { taskId: string; attachmentId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteTaskAttachment>>,
+  TError,
+  { taskId: string; attachmentId: string },
+  TContext
+> => {
+  const mutationKey = ["deleteTaskAttachment"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteTaskAttachment>>,
+    { taskId: string; attachmentId: string }
+  > = (props) => {
+    const { taskId, attachmentId } = props ?? {};
+
+    return deleteTaskAttachment(taskId, attachmentId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteTaskAttachmentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteTaskAttachment>>
+>;
+
+export type DeleteTaskAttachmentMutationError = ErrorType<unknown>;
+
+export const useDeleteTaskAttachment = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteTaskAttachment>>,
+    TError,
+    { taskId: string; attachmentId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteTaskAttachment>>,
+  TError,
+  { taskId: string; attachmentId: string },
+  TContext
+> => {
+  return useMutation(getDeleteTaskAttachmentMutationOptions(options));
+};
+
+export const getDownloadTaskAttachmentUrl = (
+  taskId: string,
+  attachmentId: string,
+) => {
+  return `/api/tasks/${taskId}/attachments/${attachmentId}/download`;
+};
+
+export const downloadTaskAttachment = async (
+  taskId: string,
+  attachmentId: string,
+  options?: RequestInit,
+): Promise<Blob> => {
+  return customFetch<Blob>(getDownloadTaskAttachmentUrl(taskId, attachmentId), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getDownloadTaskAttachmentQueryKey = (
+  taskId: string,
+  attachmentId: string,
+) => {
+  return [`/api/tasks/${taskId}/attachments/${attachmentId}/download`] as const;
+};
+
+export const getDownloadTaskAttachmentQueryOptions = <
+  TData = Awaited<ReturnType<typeof downloadTaskAttachment>>,
+  TError = ErrorType<unknown>,
+>(
+  taskId: string,
+  attachmentId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadTaskAttachment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getDownloadTaskAttachmentQueryKey(taskId, attachmentId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof downloadTaskAttachment>>
+  > = ({ signal }) =>
+    downloadTaskAttachment(taskId, attachmentId, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!(taskId && attachmentId),
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof downloadTaskAttachment>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type DownloadTaskAttachmentQueryResult = NonNullable<
+  Awaited<ReturnType<typeof downloadTaskAttachment>>
+>;
+export type DownloadTaskAttachmentQueryError = ErrorType<unknown>;
+
+export function useDownloadTaskAttachment<
+  TData = Awaited<ReturnType<typeof downloadTaskAttachment>>,
+  TError = ErrorType<unknown>,
+>(
+  taskId: string,
+  attachmentId: string,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof downloadTaskAttachment>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getDownloadTaskAttachmentQueryOptions(
+    taskId,
+    attachmentId,
+    options,
+  );
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary Update project status; emits a push notification for members

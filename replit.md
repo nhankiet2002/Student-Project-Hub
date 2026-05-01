@@ -33,6 +33,18 @@ Monorepo (pnpm workspaces). All UI text is Vietnamese. No emojis in UI.
 - **Skill complementarity** for teammate recommendations in `/api/teams/recommend` (shared + complementary skills, gap analysis vs topic).
 - **AI topic generation** quota: 10/month per student tracked in `aiQuotaByUser`.
 
+### Task file attachments
+- Each task card in the Kanban board ("Bảng công việc") has a paperclip icon button (Paperclip icon, hover turns violet).
+- Clicking it opens `TaskAttachmentDialog` (`artifacts/promatch/src/components/task-attachment-dialog.tsx`) — a modal showing task meta (title, status, assignee, description) and a full attachment panel.
+- **Backend**: `multer` (memory storage, 20 MB limit) handles uploads via:
+  - `GET /api/tasks/:taskId/attachments` — list metadata (buffer excluded)
+  - `POST /api/tasks/:taskId/attachments` (multipart `file` field) — upload; responds with `TaskAttachment` metadata
+  - `DELETE /api/tasks/:taskId/attachments/:attachmentId` — remove
+  - `GET /api/tasks/:taskId/attachments/:attachmentId/download` — serve file (Content-Disposition: attachment)
+- Attachments stored in `taskAttachments: Map<taskId, TaskAttachmentFile[]>` in-memory in `store.ts`.
+- **Dialog UX**: file list with colored type icons (image→green, PDF→red, spreadsheet→emerald, Word→blue, archive→yellow, generic→grey), file size, uploader name, relative time. Download and delete buttons appear on row hover. Drag-and-drop + click-to-browse upload zone. Multiple files selectable at once.
+- Download uses a programmatic anchor click against `/api/tasks/{taskId}/attachments/{id}/download` (via `BASE_URL` prefix).
+
 ### Student dashboard layout
 - `artifacts/promatch/src/pages/home.tsx` `StudentDashboard` is composed of four rows: gradient banner, four colored stat cards, a two-column main area (latest topics + my projects with report-export panel), and four quick-action cards.
 - `ReportExportSection` (inside home.tsx) lets the student export the featured project as PDF (via `jspdf`) or CSV (Blob download). Three checkboxes — "Kèm danh sách công việc", "Kèm lịch sử thảo luận", "Kèm biểu đồ đóng góp" — add `tasks` (`useListTasks`), `recentActivity` (from `useGetProject`), and `contributions` (`useGetContributions`) sections to the export. CSV is UTF-8 BOM + comma-separated with quoted-field escaping; PDF uses helvetica with a manual line wrapper.
