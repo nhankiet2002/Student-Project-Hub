@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { useGetSession, useSwitchRole, useListNotifications, useListConversations } from "@workspace/api-client-react";
+import { useGetSession, useSwitchRole, useListNotifications, useListConversations, useGetPortfolio } from "@workspace/api-client-react";
 import { useAuth } from "@/context/auth";
-type UserRole = "student" | "instructor" | "enterprise" | "alumni" | "admin";
+type UserRole = "student" | "instructor" | "enterprise" | "admin";
 import { 
   BookOpen, 
   Briefcase, 
@@ -45,6 +45,9 @@ import { getListNotificationsQueryKey, getListConversationsQueryKey } from "@wor
 
 export function AppLayout({ children }: { children: React.ReactNode }) {
   const { data: session, isError: sessionError, isLoading: sessionLoading } = useGetSession();
+  const { data: portfolio } = useGetPortfolio(session?.id || "", {
+    query: { enabled: !!session?.id }
+  });
   const { data: notifications } = useListNotifications({
     query: {
       queryKey: getListNotificationsQueryKey(),
@@ -69,7 +72,9 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const unreadCount = notifications?.filter(n => !n.read).length || 0;
+  const unreadCount = Array.isArray(notifications) 
+    ? notifications.filter(n => !n.read).length 
+    : 0;
 
   const { data: conversations } = useListConversations({
     query: { queryKey: getListConversationsQueryKey(), refetchInterval: 5000 },
@@ -80,7 +85,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
     student: "Sinh viên",
     instructor: "Giảng viên",
     enterprise: "Doanh nghiệp",
-    alumni: "Cựu sinh viên",
+
     admin: "Quản trị viên",
   };
 
@@ -129,13 +134,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
           { href: "/admin/moderation", label: "Kiểm duyệt", icon: ShieldAlert },
           { href: "/analytics", label: "Phân tích hệ thống", icon: TrendingUp },
         ];
-      case "alumni":
-        return [
-          { href: "/", label: "Trang chủ", icon: Home },
-          { href: "/knowledge", label: "Kho tri thức", icon: BookOpen },
-          { href: "/topics", label: "Khám phá đề tài", icon: Compass },
-          { href: "/messages", label: "Tin nhắn", icon: MessageSquare, badge: totalMsgUnread },
-        ];
+
       default:
         return baseItems;
     }
@@ -236,13 +235,13 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="pl-2 pr-4 h-10 flex items-center gap-3 rounded-full border border-transparent hover:border-border hover:bg-muted/50">
                   <Avatar className="w-8 h-8">
-                    <AvatarImage src={session.avatarUrl || ''} />
+                    <AvatarImage src={portfolio?.avatarUrl || session.avatarUrl || ''} />
                     <AvatarFallback className="bg-primary/10 text-primary">
-                      {session.name.charAt(0).toUpperCase()}
+                      {(portfolio?.name || session.name)?.charAt(0)?.toUpperCase() || "?"}
                     </AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col items-start hidden sm:flex">
-                    <span className="text-sm font-medium leading-none">{session.name}</span>
+                    <span className="text-sm font-medium leading-none">{portfolio?.name || session.name}</span>
                     <span className="text-xs text-muted-foreground mt-1">
                       {roleLabels[session.role]}
                     </span>
@@ -253,7 +252,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
               <DropdownMenuContent align="end" className="w-60">
                 <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
                 <div className="px-2 py-1.5 text-sm">
-                  <div className="font-medium">{session.name}</div>
+                  <div className="font-medium">{portfolio?.name || session.name}</div>
                   <div className="text-muted-foreground text-xs">{session.email}</div>
                 </div>
                 <div className="px-2 pb-1.5">
@@ -263,24 +262,19 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                 </div>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
+                  onClick={() => setLocation("/portfolio")}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  Hồ sơ năng lực
+                </DropdownMenuItem>
+                <DropdownMenuItem
                   onClick={() => setLocation("/profile")}
                   className="flex items-center gap-2 cursor-pointer"
                 >
                   <UserRound className="w-4 h-4" />
-                  Hồ sơ cá nhân
+                  Cài đặt tài khoản
                 </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuLabel>Chuyển đổi vai trò (Demo)</DropdownMenuLabel>
-                {Object.entries(roleLabels).map(([role, label]) => (
-                  <DropdownMenuItem 
-                    key={role} 
-                    onClick={() => handleRoleSwitch(role as UserRole)}
-                    className="flex justify-between items-center cursor-pointer"
-                  >
-                    {label}
-                    {session.role === role && <Badge variant="secondary" className="ml-2 text-[10px]">Hiện tại</Badge>}
-                  </DropdownMenuItem>
-                ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}

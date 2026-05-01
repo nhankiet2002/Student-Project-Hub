@@ -48,11 +48,12 @@ function ProtectedRoutes() {
   const { user, loading } = useAuth();
 
   if (loading) return null;
-  if (!user) return <Redirect to="/login" />;
+  if (!user) return <Redirect to="/landing" />;
 
   return (
     <AppLayout>
       <Switch>
+        <Route path="/home" component={Home} />
         <Route path="/" component={Home} />
         <Route path="/portfolio" component={Portfolio} />
         <Route path="/portfolio/public/:userId" component={PortfolioPublic} />
@@ -89,12 +90,15 @@ function Router() {
 
   return (
     <Switch>
+      <Route path="/">
+        {loading ? null : user ? <Redirect to="/home" /> : <Redirect to="/landing" />}
+      </Route>
       <Route path="/landing" component={LandingPage} />
       <Route path="/login">
-        {loading ? null : user ? <Redirect to="/" /> : <LoginPage />}
+        {loading ? null : user ? <Redirect to="/home" /> : <LoginPage />}
       </Route>
       <Route path="/register">
-        {loading ? null : user ? <Redirect to="/" /> : <RegisterPage />}
+        {loading ? null : user ? <Redirect to="/home" /> : <RegisterPage />}
       </Route>
       <Route>
         <ProtectedRoutes />

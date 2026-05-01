@@ -1,4 +1,4 @@
-export type UserRole = "student" | "instructor" | "enterprise" | "alumni" | "admin";
+export type UserRole = "student" | "instructor" | "enterprise" | "admin";
 export type UserStatus = "active" | "suspended" | "pending";
 
 export interface User {
@@ -104,7 +104,7 @@ export interface Portfolio {
   enterpriseProfile?: EnterpriseProfile;
 }
 
-export type TopicSource = "instructor" | "enterprise" | "alumni" | "student" | "ai" | "knowledge" | "trend";
+export type TopicSource = "instructor" | "enterprise" | "student" | "ai" | "knowledge" | "trend";
 
 export interface Topic {
   id: string;

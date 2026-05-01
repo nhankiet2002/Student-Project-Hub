@@ -1,0 +1,211 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id           String      @id @default(uuid())
+  name         String
+  email        String      @unique
+  password     String      @default("123456")
+  role         String      @default("student") // student, instructor, enterprise, admin
+  status       String      @default("active") // active, suspended, pending
+  avatarUrl    String?     @map("avatar_url")
+  organization String?
+  createdAt    DateTime    @default(now()) @map("created_at")
+  Portfolio    Portfolio?
+  Projects     ProjectMember[]
+}
+
+model Portfolio {
+  userId             String   @id @map("user_id")
+  name               String
+  avatarUrl          String?  @map("avatar_url")
+  bio                String   @default("")
+  major              String?
+  year               Int?
+  interests          Json     @default("[]")
+  skills             Json     @default("[]") // Array of PortfolioSkill
+  certifications     Json     @default("[]")
+  completedProjects  Int      @default(0) @map("completed_projects")
+  contributionScore  Int      @default(0) @map("contribution_score")
+  publicVisible      Boolean  @default(true) @map("public_visible")
+  portfolioUrl       String?  @map("portfolio_url")
+  pastProjects       Json?    @map("past_projects") // Array of PastProject
+  instructorProfile  Json?    @map("instructor_profile") // InstructorProfile
+  enterpriseProfile  Json?    @map("enterprise_profile") // EnterpriseProfile
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("portfolios")
+}
+
+model Topic {
+  id                 String   @id @default(uuid())
+  title              String
+  problemDescription String   @map("problem_description")
+  objectives         Json     @default("[]")
+  technologies       Json     @default("[]")
+  domain             String
+  difficulty         String   @default("intermediate") // beginner, intermediate, advanced
+  source             String   @default("student") // instructor, enterprise, student, ai, knowledge, trend
+  sourceLabel        String?  @map("source_label")
+  requiredSkills     Json     @default("[]") @map("required_skills")
+  teamSize           Int      @default(3) @map("team_size")
+  feasibility        String?
+  popularity         Int      @default(0)
+  completeness       Int      @default(0)
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@map("topics")
+}
+
+model Project {
+  id                  String   @id @default(uuid())
+  name                String
+  topicId             String   @map("topic_id")
+  topicTitle          String   @map("topic_title")
+  status              String   @default("planning") // planning, in_progress, review, completed, at_risk
+  progress            Int      @default(0)
+  memberCount         Int      @default(0) @map("member_count")
+  instructorName      String   @map("instructor_name")
+  dueDate             String   @map("due_date")
+  milestoneCount      Int      @default(0) @map("milestone_count")
+  completedMilestones Int      @default(0) @map("completed_milestones")
+  description         String?
+  createdAt           DateTime @default(now()) @map("created_at")
+
+  members    ProjectMember[]
+  milestones Milestone[]
+  activities ProjectActivity[]
+  tasks      Task[]
+
+  @@map("projects")
+}
+
+model ProjectMember {
+  id              String @id @default(uuid())
+  projectId       String @map("project_id")
+  userId          String @map("user_id")
+  name            String
+  avatarUrl       String? @map("avatar_url")
+  role            String
+  contributionPct Float  @default(0) @map("contribution_pct")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("project_members")
+}
+
+model Milestone {
+  id        String @id @default(uuid())
+  projectId String @map("project_id")
+  name      String
+  dueDate   String @map("due_date")
+  status    String @default("pending") // pending, in_progress, completed, overdue
+  feedback  String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("milestones")
+}
+
+model ProjectActivity {
+  id        String @id @default(uuid())
+  projectId String @map("project_id")
+  message   String
+  timestamp String
+  actor     String?
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("project_activities")
+}
+
+model Task {
+  id           String   @id @default(uuid())
+  projectId    String   @map("project_id")
+  title        String
+  description  String?
+  status       String   @default("todo") // todo, in_progress, review, done
+  assigneeId   String?  @map("assignee_id")
+  assigneeName String   @map("assignee_name")
+  dueDate      String?  @map("due_date")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  project Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@map("tasks")
+}
+
+model CallForProject {
+  id                 String   @id @default(uuid())
+  title              String
+  enterpriseName     String   @map("enterprise_name")
+  enterpriseLogo     String?  @map("enterprise_logo")
+  problemDescription String   @map("problem_description")
+  requirements       Json     @default("[]")
+  timeline           String
+  benefits           String
+  budget             String?
+  status             String   @default("pending") // pending, published, closed
+  postedAt           String   @map("posted_at")
+  deadline           String?
+  applicationCount   Int      @default(0) @map("application_count")
+  skillTags          Json     @default("[]") @map("skill_tags")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  @@map("calls_for_projects")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  title     String
+  body      String
+  type      String   @default("system") // milestone, call, team, moderation, system
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+model Conversation {
+  id            String   @id @default(uuid())
+  type          String   // group, direct
+  name          String
+  avatarUrl     String?  @map("avatar_url")
+  memberIds     Json     @default("[]") @map("member_ids")
+  projectId     String?  @map("project_id")
+  lastMessage   String?  @map("last_message")
+  lastMessageAt String?  @map("last_message_at")
+  unreadCount   Int      @default(0) @map("unread_count")
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  messages Message[]
+
+  @@map("conversations")
+}
+
+model Message {
+  id             String   @id @default(uuid())
+  conversationId String   @map("conversation_id")
+  senderId       String   @map("sender_id")
+  senderName     String   @map("sender_name")
+  senderAvatar   String?  @map("sender_avatar")
+  content        String
+  sentAt         DateTime @default(now()) @map("sent_at")
+  edited         Boolean  @default(false)
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}

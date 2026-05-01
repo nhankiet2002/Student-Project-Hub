@@ -1,3 +1,17 @@
+import * as dotenv from "dotenv";
+import * as path from "path";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
+
+if (typeof globalThis.File === 'undefined') {
+  globalThis.File = class File {} as any;
+}
+
 import app from "./app";
 import { logger } from "./lib/logger";
 

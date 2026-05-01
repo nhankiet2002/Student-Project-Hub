@@ -51,7 +51,6 @@ export const UserRole = {
   student: "student",
   instructor: "instructor",
   enterprise: "enterprise",
-  alumni: "alumni",
   admin: "admin",
 } as const;
 
@@ -110,7 +109,6 @@ export const PortfolioRole = {
   student: "student",
   instructor: "instructor",
   enterprise: "enterprise",
-  alumni: "alumni",
   admin: "admin",
 } as const;
 
@@ -210,7 +208,6 @@ export type TopicSource = (typeof TopicSource)[keyof typeof TopicSource];
 export const TopicSource = {
   instructor: "instructor",
   enterprise: "enterprise",
-  alumni: "alumni",
   student: "student",
   ai: "ai",
   knowledge: "knowledge",

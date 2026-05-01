@@ -171,7 +171,7 @@ export default function LoginPage() {
           <div>Sinh viên: <span className="font-mono">minhanh@student.edu.vn</span></div>
           <div>Giảng viên: <span className="font-mono">qbao@edu.vn</span></div>
           <div>Doanh nghiệp: <span className="font-mono">partner@fpt-software.vn</span></div>
-          <div>Cựu sinh viên: <span className="font-mono">thuha@alumni.edu.vn</span></div>
+
           <div>Quản trị (1 tài khoản): <span className="font-mono">admin@promatch.vn</span></div>
         </div>
 

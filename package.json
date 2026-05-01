@@ -5,6 +5,9 @@
   "scripts": {
     "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
     "build": "pnpm run typecheck && pnpm -r --if-present run build",
+    "dev": "pnpm run dev:backend & pnpm run dev:frontend",
+    "dev:backend": "cd artifacts/api-server && set -a && . ../../.env && set +a && PORT=3001 pnpm run dev",
+    "dev:frontend": "cd artifacts/promatch && PORT=3000 BASE_PATH=/ API_URL=http://localhost:3001 pnpm run dev",
     "typecheck:libs": "tsc --build",
     "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
   },

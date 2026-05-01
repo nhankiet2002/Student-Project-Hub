@@ -117,16 +117,7 @@ export const users: User[] = [
     organization: "FPT Software",
     createdAt: daysAgo(400),
   },
-  {
-    id: "u_alumni",
-    name: "Phạm Thu Hà",
-    email: "thuha@alumni.edu.vn",
-    role: "alumni",
-    status: "active",
-    avatarUrl: null,
-    organization: "VinAI Research",
-    createdAt: daysAgo(900),
-  },
+
   {
     id: "u_admin",
     name: "Lê Văn Cường",
@@ -207,16 +198,7 @@ export const users: User[] = [
     organization: "Tiki",
     createdAt: daysAgo(200),
   },
-  {
-    id: "u_alum2",
-    name: "Trần Quang Vinh",
-    email: "qvinh@alumni.edu.vn",
-    role: "alumni",
-    status: "active",
-    avatarUrl: null,
-    organization: "Google Singapore",
-    createdAt: daysAgo(1500),
-  },
+
 ];
 
 export const portfolios: Record<string, Portfolio> = {
@@ -739,7 +721,7 @@ const topicTitles = [
   },
 ];
 
-const sources = ["instructor", "enterprise", "alumni", "student", "ai", "knowledge", "trend"] as const;
+const sources = ["instructor", "enterprise", "student", "ai", "knowledge", "trend"] as const;
 
 export const topics: Topic[] = topicTitles.map((t, i) => ({
   id: id("tp", i + 1),
@@ -755,15 +737,13 @@ export const topics: Topic[] = topicTitles.map((t, i) => ({
       ? "TS. Trần Quốc Bảo"
       : sources[i % sources.length] === "enterprise"
         ? "FPT Software"
-        : sources[i % sources.length] === "alumni"
-          ? "Phạm Thu Hà - VinAI"
-          : sources[i % sources.length] === "trend"
-            ? "GitHub Trending"
-            : sources[i % sources.length] === "knowledge"
-              ? "Kho tri thức 2024"
-              : sources[i % sources.length] === "ai"
-                ? "Sinh bởi AI"
-                : "Sinh viên đề xuất",
+        : sources[i % sources.length] === "trend"
+          ? "GitHub Trending"
+          : sources[i % sources.length] === "knowledge"
+            ? "Kho tri thức 2024"
+            : sources[i % sources.length] === "ai"
+              ? "Sinh bởi AI"
+              : "Sinh viên đề xuất",
   requiredSkills: t.skills,
   teamSize: 3 + (i % 3),
   feasibility:

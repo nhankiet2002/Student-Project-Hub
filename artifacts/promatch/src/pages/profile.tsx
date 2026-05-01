@@ -107,8 +107,37 @@ export default function Profile() {
     });
   };
 
-  const handleSaveAvatar = () => {
-    updateProfileMutation.mutate({ data: { avatarUrl: avatarValue || null } });
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/session/me/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) throw new Error("Upload failed");
+
+      const data = await res.json();
+      
+      // Update local state and invalidate queries
+      queryClient.invalidateQueries({ queryKey: getGetSessionQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetPortfolioQueryKey(userId) });
+      toast.success("Đã cập nhật ảnh đại diện");
+      setEditingAvatar(false);
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi tải ảnh lên. Vui lòng thử lại.");
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const isLoading = sessionLoading || portfolioLoading;
@@ -138,7 +167,7 @@ export default function Profile() {
       <Card>
         <CardHeader>
           <CardTitle>Ảnh đại diện</CardTitle>
-          <CardDescription>URL ảnh đại diện hiển thị trên hồ sơ của bạn.</CardDescription>
+          <CardDescription>Cập nhật ảnh đại diện hiển thị trên hồ sơ của bạn.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex items-center gap-5">
@@ -158,38 +187,25 @@ export default function Profile() {
 
           {editingAvatar ? (
             <div className="space-y-3">
-              <Label htmlFor="avatarUrl">URL ảnh đại diện</Label>
+              <Label htmlFor="avatarFile">Tải lên ảnh mới</Label>
               <Input
-                id="avatarUrl"
-                value={avatarValue}
-                onChange={(e) => setAvatarValue(e.target.value)}
-                placeholder="https://example.com/avatar.jpg"
+                id="avatarFile"
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                disabled={isUploading}
               />
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  onClick={handleSaveAvatar}
-                  disabled={updateProfileMutation.isPending}
-                >
-                  {updateProfileMutation.isPending ? (
-                    <Loader2 className="w-4 h-4 mr-1 animate-spin" />
-                  ) : (
-                    <Check className="w-4 h-4 mr-1" />
-                  )}
-                  Lưu
-                </Button>
-                <Button
-                  size="sm"
                   variant="outline"
-                  onClick={() => {
-                    setAvatarValue(session.avatarUrl || portfolio?.avatarUrl || "");
-                    setEditingAvatar(false);
-                  }}
-                  disabled={updateProfileMutation.isPending}
+                  onClick={() => setEditingAvatar(false)}
+                  disabled={isUploading}
                 >
                   <X className="w-4 h-4 mr-1" />
                   Huỷ
                 </Button>
+                {isUploading && <span className="text-sm text-muted-foreground self-center animate-pulse">Đang tải lên...</span>}
               </div>
             </div>
           ) : (

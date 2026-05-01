@@ -41,7 +41,7 @@ const ROLES = [
   { value: "student", label: "Sinh viên" },
   { value: "instructor", label: "Giảng viên" },
   { value: "enterprise", label: "Doanh nghiệp" },
-  { value: "alumni", label: "Cựu sinh viên" },
+
   { value: "admin", label: "Quản trị viên" },
 ];
 

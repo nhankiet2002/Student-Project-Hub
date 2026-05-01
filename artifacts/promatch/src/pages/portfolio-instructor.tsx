@@ -132,6 +132,30 @@ export default function InstructorPortfolio({ userId }: { userId: string }) {
     });
   };
 
+  const [isUploading, setIsUploading] = useState(false);
+
+  const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setIsUploading(true);
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch("/api/session/me/avatar", { method: "POST", body: formData });
+      if (!res.ok) throw new Error("Upload failed");
+      queryClient.invalidateQueries({ queryKey: getGetSessionQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetPortfolioQueryKey(userId) });
+      toast.success("Đã cập nhật ảnh đại diện");
+    } catch (err) {
+      console.error(err);
+      toast.error("Lỗi khi tải ảnh lên. Vui lòng thử lại.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   const addExpertise = () => {
     const v = newExp.trim();
     if (v && !form.expertise.includes(v)) {
@@ -171,11 +195,18 @@ export default function InstructorPortfolio({ userId }: { userId: string }) {
         <div className="md:col-span-1 space-y-6">
           <Card>
             <CardContent className="pt-6 flex flex-col items-center text-center">
-              <Avatar className="w-24 h-24 mb-4">
-                <AvatarFallback className="text-2xl bg-primary/10 text-primary">
-                  {portfolio.name.charAt(0)}
-                </AvatarFallback>
-              </Avatar>
+              <div className="relative mb-4 group">
+                <Avatar className="w-24 h-24">
+                  <img src={portfolio.avatarUrl || ''} className="object-cover w-full h-full" alt="Avatar" style={{ display: portfolio.avatarUrl ? 'block' : 'none' }} />
+                  <AvatarFallback className="text-2xl bg-primary/10 text-primary">
+                    {portfolio.name.charAt(0)}
+                  </AvatarFallback>
+                </Avatar>
+                <label className="absolute inset-0 flex items-center justify-center bg-black/60 text-white rounded-full opacity-0 group-hover:opacity-100 cursor-pointer transition-opacity disabled:cursor-not-allowed">
+                  {isUploading ? <Loader2 className="w-6 h-6 animate-spin" /> : <span className="text-xs font-semibold">Đổi ảnh</span>}
+                  <input type="file" className="hidden" accept="image/*" onChange={handleAvatarChange} disabled={isUploading} />
+                </label>
+              </div>
               <h2 className="text-xl font-bold">{portfolio.name}</h2>
               {(form.title || form.department) && (
                 <p className="text-sm text-muted-foreground mt-1">

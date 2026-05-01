@@ -26,7 +26,7 @@ export const LoginResponse = zod.object({
   id: zod.string(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]),
   status: zod.enum(["active", "suspended", "pending"]),
   avatarUrl: zod.string().nullish(),
   organization: zod.string().nullish(),
@@ -47,7 +47,7 @@ export const GetSessionResponse = zod.object({
   id: zod.string(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]),
   status: zod.enum(["active", "suspended", "pending"]),
   avatarUrl: zod.string().nullish(),
   organization: zod.string().nullish(),
@@ -58,14 +58,14 @@ export const GetSessionResponse = zod.object({
  * @summary Switch active demo role
  */
 export const SwitchRoleBody = zod.object({
-  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]),
 });
 
 export const SwitchRoleResponse = zod.object({
   id: zod.string(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]),
   status: zod.enum(["active", "suspended", "pending"]),
   avatarUrl: zod.string().nullish(),
   organization: zod.string().nullish(),
@@ -84,7 +84,7 @@ export const UpdateProfileResponse = zod.object({
   id: zod.string(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]),
   status: zod.enum(["active", "suspended", "pending"]),
   avatarUrl: zod.string().nullish(),
   organization: zod.string().nullish(),
@@ -110,7 +110,7 @@ export const RegisterUserBody = zod.object({
   name: zod.string(),
   email: zod.string().email(),
   password: zod.string(),
-  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]),
 });
 
 /**
@@ -133,7 +133,7 @@ export const GetPortfolioParams = zod.object({
 export const GetPortfolioResponse = zod.object({
   userId: zod.string(),
   role: zod
-    .enum(["student", "instructor", "enterprise", "alumni", "admin"])
+    .enum(["student", "instructor", "enterprise", "admin"])
     .optional(),
   name: zod.string(),
   avatarUrl: zod.string().nullish(),
@@ -300,7 +300,7 @@ export const UpdatePortfolioBody = zod.object({
 export const UpdatePortfolioResponse = zod.object({
   userId: zod.string(),
   role: zod
-    .enum(["student", "instructor", "enterprise", "alumni", "admin"])
+    .enum(["student", "instructor", "enterprise", "admin"])
     .optional(),
   name: zod.string(),
   avatarUrl: zod.string().nullish(),
@@ -413,7 +413,6 @@ export const ListTopicsResponse = zod.object({
       source: zod.enum([
         "instructor",
         "enterprise",
-        "alumni",
         "student",
         "ai",
         "knowledge",
@@ -460,7 +459,6 @@ export const GetTopicResponse = zod.object({
   source: zod.enum([
     "instructor",
     "enterprise",
-    "alumni",
     "student",
     "ai",
     "knowledge",
@@ -495,7 +493,6 @@ export const RecommendTopicsResponseItem = zod.object({
     source: zod.enum([
       "instructor",
       "enterprise",
-      "alumni",
       "student",
       "ai",
       "knowledge",
@@ -540,7 +537,6 @@ export const AiGenerateTopicsResponse = zod.object({
       source: zod.enum([
         "instructor",
         "enterprise",
-        "alumni",
         "student",
         "ai",
         "knowledge",
@@ -661,7 +657,7 @@ export const RecommendTeammatesResponseItem = zod.object({
     id: zod.string(),
     name: zod.string(),
     email: zod.string(),
-    role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+    role: zod.enum(["student", "instructor", "enterprise", "admin"]),
     status: zod.enum(["active", "suspended", "pending"]),
     avatarUrl: zod.string().nullish(),
     organization: zod.string().nullish(),
@@ -983,7 +979,7 @@ export const UploadTaskAttachmentParams = zod.object({
 });
 
 export const UploadTaskAttachmentBody = zod.object({
-  file: zod.instanceof(File),
+  file: typeof File !== 'undefined' ? zod.instanceof(File) : zod.any(),
 });
 
 export const DeleteTaskAttachmentParams = zod.object({
@@ -1073,7 +1069,7 @@ export const ListUsersResponseItem = zod.object({
   id: zod.string(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]),
   status: zod.enum(["active", "suspended", "pending"]),
   avatarUrl: zod.string().nullish(),
   organization: zod.string().nullish(),
@@ -1093,7 +1089,7 @@ export const UpdateUserStatusResponse = zod.object({
   id: zod.string(),
   name: zod.string(),
   email: zod.string(),
-  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]),
   status: zod.enum(["active", "suspended", "pending"]),
   avatarUrl: zod.string().nullish(),
   organization: zod.string().nullish(),
@@ -1180,7 +1176,7 @@ export const SearchUsersQueryParams = zod.object({
 export const SearchUsersResponseItem = zod.object({
   id: zod.string(),
   name: zod.string(),
-  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]),
   organization: zod.string().nullish(),
   avatarUrl: zod.string().nullish(),
   known: zod.boolean(),

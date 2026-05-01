@@ -1149,7 +1149,7 @@ components:
 
     UserRole:
       type: string
-      enum: [student, instructor, enterprise, alumni, admin]
+      enum: [student, instructor, enterprise, admin]
 
     User:
       type: object
@@ -1196,7 +1196,7 @@ components:
       required: [userId, name, bio, interests, skills, completedProjects, contributionScore]
       properties:
         userId: { type: string }
-        role: { type: string, enum: [student, instructor, enterprise, alumni, admin] }
+        role: { type: string, enum: [student, instructor, enterprise, admin] }
         name: { type: string }
         avatarUrl: { type: string, nullable: true }
         bio: { type: string }
@@ -1323,7 +1323,7 @@ components:
 
     TopicSource:
       type: string
-      enum: [instructor, enterprise, alumni, student, ai, knowledge, trend]
+      enum: [instructor, enterprise, student, ai, knowledge, trend]
 
     Topic:
       type: object
