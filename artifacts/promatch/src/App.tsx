@@ -29,40 +29,53 @@ import AdminUsers from "@/pages/admin-users";
 import AdminModeration from "@/pages/admin-moderation";
 import Settings from "@/pages/settings";
 import Messages from "@/pages/messages";
+import LandingPage from "@/pages/landing";
+import LoginPage from "@/pages/login";
+import RegisterPage from "@/pages/register";
 
 const queryClient = new QueryClient();
 
 function Router() {
   return (
-    <AppLayout>
-      <Switch>
-        <Route path="/" component={Home} />
-        <Route path="/portfolio" component={Portfolio} />
-        <Route path="/portfolio/public/:userId" component={PortfolioPublic} />
-        <Route path="/topics" component={Topics} />
-        <Route path="/topics/recommended" component={TopicsRecommended} />
-        <Route path="/topics/ai" component={TopicsAI} />
-        <Route path="/topics/:topicId" component={TopicDetail} />
-        <Route path="/trends" component={Trends} />
-        <Route path="/marketplace" component={Marketplace} />
-        <Route path="/marketplace/new" component={MarketplaceNew} />
-        <Route path="/marketplace/:callId" component={MarketplaceDetail} />
-        <Route path="/teams" component={Teams} />
-        <Route path="/projects" component={Projects} />
-        <Route path="/projects/:projectId" component={ProjectDetail} />
-        <Route path="/instructor" component={InstructorDashboard} />
-        <Route path="/knowledge" component={Knowledge} />
-        <Route path="/knowledge/:archiveId" component={KnowledgeDetail} />
-        <Route path="/notifications" component={Notifications} />
-        <Route path="/analytics" component={Analytics} />
-        <Route path="/admin" component={Admin} />
-        <Route path="/admin/users" component={AdminUsers} />
-        <Route path="/admin/moderation" component={AdminModeration} />
-        <Route path="/messages" component={Messages} />
-        <Route path="/settings" component={Settings} />
-        <Route component={NotFound} />
-      </Switch>
-    </AppLayout>
+    <Switch>
+      {/* Public routes — no sidebar */}
+      <Route path="/landing" component={LandingPage} />
+      <Route path="/login" component={LoginPage} />
+      <Route path="/register" component={RegisterPage} />
+
+      {/* App routes — wrapped in AppLayout */}
+      <Route>
+        <AppLayout>
+          <Switch>
+            <Route path="/" component={Home} />
+            <Route path="/portfolio" component={Portfolio} />
+            <Route path="/portfolio/public/:userId" component={PortfolioPublic} />
+            <Route path="/topics" component={Topics} />
+            <Route path="/topics/recommended" component={TopicsRecommended} />
+            <Route path="/topics/ai" component={TopicsAI} />
+            <Route path="/topics/:topicId" component={TopicDetail} />
+            <Route path="/trends" component={Trends} />
+            <Route path="/marketplace" component={Marketplace} />
+            <Route path="/marketplace/new" component={MarketplaceNew} />
+            <Route path="/marketplace/:callId" component={MarketplaceDetail} />
+            <Route path="/teams" component={Teams} />
+            <Route path="/projects" component={Projects} />
+            <Route path="/projects/:projectId" component={ProjectDetail} />
+            <Route path="/instructor" component={InstructorDashboard} />
+            <Route path="/knowledge" component={Knowledge} />
+            <Route path="/knowledge/:archiveId" component={KnowledgeDetail} />
+            <Route path="/notifications" component={Notifications} />
+            <Route path="/analytics" component={Analytics} />
+            <Route path="/admin" component={Admin} />
+            <Route path="/admin/users" component={AdminUsers} />
+            <Route path="/admin/moderation" component={AdminModeration} />
+            <Route path="/messages" component={Messages} />
+            <Route path="/settings" component={Settings} />
+            <Route component={NotFound} />
+          </Switch>
+        </AppLayout>
+      </Route>
+    </Switch>
   );
 }
 
