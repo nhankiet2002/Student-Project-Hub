@@ -676,6 +676,15 @@ export type UpdateProfileBody = {
   avatarUrl?: string | null;
 };
 
+export type ChangePasswordBody = {
+  currentPassword: string;
+  newPassword: string;
+};
+
+export type ChangePassword200 = {
+  ok: boolean;
+};
+
 export type RegisterUserBody = {
   name: string;
   email: string;

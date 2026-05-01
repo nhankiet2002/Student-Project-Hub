@@ -71,6 +71,18 @@ router.post("/session/logout", (req, res) => {
   });
 });
 
+router.patch("/session/password", (req, res) => {
+  const user = currentUser(req);
+  if (!user) { res.status(401).json({ error: "Chưa đăng nhập" }); return; }
+  const { currentPassword, newPassword } = req.body as { currentPassword?: string; newPassword?: string };
+  if (!currentPassword || !newPassword) { res.status(400).json({ error: "Vui lòng điền đầy đủ thông tin" }); return; }
+  if (newPassword.trim().length < 6) { res.status(400).json({ error: "Mật khẩu mới phải có ít nhất 6 ký tự" }); return; }
+  const storedPassword = userPasswords[user.email];
+  if (!storedPassword || storedPassword !== currentPassword) { res.status(401).json({ error: "Mật khẩu hiện tại không đúng" }); return; }
+  userPasswords[user.email] = newPassword.trim();
+  res.json({ ok: true });
+});
+
 router.put("/session/me", (req, res) => {
   if (!req.session.userId) { res.status(401).json({ error: "Not authenticated" }); return; }
   const role = req.body?.role as string;

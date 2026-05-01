@@ -1,4 +1,4 @@
-import { useGetSession, useGetPortfolio, useUpdatePortfolio, getGetPortfolioQueryKey } from "@workspace/api-client-react";
+import { useGetSession, useGetPortfolio, useUpdatePortfolio, getGetPortfolioQueryKey, useChangePassword } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Loader2 } from "lucide-react";
 
 export default function Settings() {
@@ -32,6 +32,47 @@ export default function Settings() {
     updates: false,
     marketing: false
   });
+
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  const changePasswordMutation = useChangePassword({
+    mutation: {
+      onSuccess: () => {
+        toast.success("Đổi mật khẩu thành công");
+        setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      },
+      onError: (err: unknown) => {
+        const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error ?? "Đổi mật khẩu thất bại";
+        toast.error(msg);
+      },
+    },
+  });
+
+  const handleChangePassword = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword) {
+      toast.error("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      toast.error("Mật khẩu mới và xác nhận không khớp");
+      return;
+    }
+    if (passwordForm.newPassword.length < 6) {
+      toast.error("Mật khẩu mới phải có ít nhất 6 ký tự");
+      return;
+    }
+    changePasswordMutation.mutate({
+      data: {
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      },
+    });
+  };
 
   const handlePrivacyToggle = (checked: boolean) => {
     if (!portfolio) return;
@@ -65,7 +106,7 @@ export default function Settings() {
         </TabsList>
 
         <div className="mt-6">
-          <TabsContent value="account" className="m-0">
+          <TabsContent value="account" className="m-0 space-y-6">
             <Card>
               <CardHeader>
                 <CardTitle>Thông tin cá nhân</CardTitle>
@@ -90,6 +131,54 @@ export default function Settings() {
                     <Input value={session.organization} readOnly disabled className="bg-muted/50" />
                   </div>
                 )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Đổi mật khẩu</CardTitle>
+                <CardDescription>Nhập mật khẩu hiện tại và mật khẩu mới để cập nhật bảo mật tài khoản.</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleChangePassword} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Mật khẩu hiện tại</Label>
+                    <Input
+                      id="currentPassword"
+                      type="password"
+                      value={passwordForm.currentPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, currentPassword: e.target.value })}
+                      placeholder="Nhập mật khẩu hiện tại"
+                      autoComplete="current-password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">Mật khẩu mới</Label>
+                    <Input
+                      id="newPassword"
+                      type="password"
+                      value={passwordForm.newPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
+                      placeholder="Ít nhất 6 ký tự"
+                      autoComplete="new-password"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Xác nhận mật khẩu mới</Label>
+                    <Input
+                      id="confirmPassword"
+                      type="password"
+                      value={passwordForm.confirmPassword}
+                      onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
+                      placeholder="Nhập lại mật khẩu mới"
+                      autoComplete="new-password"
+                    />
+                  </div>
+                  <Button type="submit" disabled={changePasswordMutation.isPending}>
+                    {changePasswordMutation.isPending && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    Đổi mật khẩu
+                  </Button>
+                </form>
               </CardContent>
             </Card>
           </TabsContent>

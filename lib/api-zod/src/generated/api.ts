@@ -92,6 +92,18 @@ export const UpdateProfileResponse = zod.object({
 });
 
 /**
+ * @summary Change current user password
+ */
+export const ChangePasswordBody = zod.object({
+  currentPassword: zod.string(),
+  newPassword: zod.string(),
+});
+
+export const ChangePasswordResponse = zod.object({
+  ok: zod.boolean(),
+});
+
+/**
  * @summary Register a new user account
  */
 export const RegisterUserBody = zod.object({
