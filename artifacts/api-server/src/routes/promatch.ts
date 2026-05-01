@@ -16,6 +16,7 @@ import {
   moderation,
   aiQuotaByUser,
   sessionState,
+  userPasswords,
   conversations,
   chatMessages,
 } from "../data/store.js";
@@ -54,17 +55,72 @@ router.get("/session/me", (_req, res) => {
 });
 
 router.post("/session/login", (req, res) => {
-  const email = (req.body?.email as string | undefined)?.trim().toLowerCase();
-  if (!email) { res.status(400).json({ error: "Email không hợp lệ" }); return; }
-  const found = users.find((u) => u.email.toLowerCase() === email);
-  if (!found) { res.status(401).json({ error: "Không tìm thấy tài khoản với email này" }); return; }
-  sessionState.currentUserId = found.id;
-  res.json(found);
+  const { email, password } = req.body as { email?: string; password?: string };
+  if (!email || !password) { res.status(400).json({ error: "Email và mật khẩu không được để trống" }); return; }
+  const user = users.find((u) => u.email.toLowerCase() === email.toLowerCase());
+  if (!user) { res.status(401).json({ error: "Email hoặc mật khẩu không đúng" }); return; }
+  const storedPassword = userPasswords[user.email];
+  if (!storedPassword || storedPassword !== password) { res.status(401).json({ error: "Email hoặc mật khẩu không đúng" }); return; }
+  sessionState.currentUserId = user.id;
+  res.json(user);
 });
 
 router.post("/session/logout", (_req, res) => {
   sessionState.currentUserId = null;
   res.json({ ok: true });
+});
+
+router.put("/session/me", (req, res) => {
+  if (!sessionState.currentUserId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const role = req.body?.role as string;
+  const map: Record<string, string> = {
+    student: "u_student",
+    instructor: "u_instructor",
+    enterprise: "u_enterprise",
+    alumni: "u_alumni",
+    admin: "u_admin",
+  };
+  if (map[role]) {
+    sessionState.currentUserId = map[role]!;
+  }
+  res.json(currentUser());
+});
+
+router.post("/users", (req, res) => {
+  const { name, email, password, role } = req.body as {
+    name?: string;
+    email?: string;
+    password?: string;
+    role?: string;
+  };
+  if (!name || !email || !password || !role) {
+    res.status(400).json({ error: "Thiếu thông tin bắt buộc" });
+    return;
+  }
+  const exists = users.find((u) => u.email === email);
+  if (exists) {
+    res.status(409).json({ error: "Email đã được sử dụng" });
+    return;
+  }
+  const validRoles = ["student", "instructor", "enterprise", "alumni", "admin"];
+  if (!validRoles.includes(role)) {
+    res.status(400).json({ error: "Vai trò không hợp lệ" });
+    return;
+  }
+  const newUser = {
+    id: `u_new_${Date.now()}`,
+    name,
+    email,
+    role: role as "student" | "instructor" | "enterprise" | "alumni" | "admin",
+    status: "active" as const,
+    avatarUrl: null,
+    organization: null,
+    createdAt: new Date().toISOString(),
+  };
+  users.push(newUser);
+  userPasswords[email] = password;
+  sessionState.currentUserId = newUser.id;
+  res.status(201).json(newUser);
 });
 
 // ===== Skills & Portfolio =====
@@ -808,6 +864,7 @@ router.get("/analytics/overview", (_req, res) => {
 // ── Users search ────────────────────────────────────────────────────────────
 router.get("/users/search", (req, res) => {
   const uid = sessionState.currentUserId;
+  if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const q = typeof req.query.q === "string" ? req.query.q.toLowerCase().trim() : "";
 
   const knownIds = new Set<string>();
@@ -841,8 +898,9 @@ router.get("/users/search", (req, res) => {
 });
 
 // ── Conversations ───────────────────────────────────────────────────────────
-router.get("/conversations", (req, res) => {
+router.get("/conversations", (_req, res) => {
   const uid = sessionState.currentUserId;
+  if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const myConvs = conversations
     .filter((c) => c.memberIds.includes(uid))
     .sort((a, b) => {
@@ -855,6 +913,7 @@ router.get("/conversations", (req, res) => {
 
 router.post("/conversations", (req, res) => {
   const uid = sessionState.currentUserId;
+  if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const body = req.body as { type?: string; name?: string; memberIds?: string[]; projectId?: string };
   const type = body.type === "direct" ? "direct" : "group";
   const memberIds: string[] = Array.isArray(body.memberIds) ? body.memberIds : [];
@@ -879,6 +938,7 @@ router.post("/conversations", (req, res) => {
 
 router.get("/conversations/:conversationId/messages", (req, res) => {
   const uid = sessionState.currentUserId;
+  if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const convId = String(req.params["conversationId"] ?? "");
   const conv = conversations.find((c) => c.id === convId);
   if (!conv) { res.status(404).json({ error: "Conversation not found" }); return; }
@@ -890,6 +950,7 @@ router.get("/conversations/:conversationId/messages", (req, res) => {
 
 router.post("/conversations/:conversationId/messages", (req, res) => {
   const uid = sessionState.currentUserId;
+  if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const convId = String(req.params["conversationId"] ?? "");
   const conv = conversations.find((c) => c.id === convId);
   if (!conv) { res.status(404).json({ error: "Conversation not found" }); return; }
@@ -917,6 +978,7 @@ router.post("/conversations/:conversationId/messages", (req, res) => {
 
 router.delete("/conversations/:conversationId/messages/:messageId", (req, res) => {
   const uid = sessionState.currentUserId;
+  if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const convId = String(req.params["conversationId"] ?? "");
   const msgId = String(req.params["messageId"] ?? "");
   const conv = conversations.find((c) => c.id === convId);

@@ -1304,6 +1304,22 @@ export const aiQuotaByUser: Record<string, number> = {};
 
 export const sessionState: { currentUserId: string | null } = { currentUserId: null };
 
+export const userPasswords: Record<string, string> = {
+  "minhanh@student.edu.vn": "password123",
+  "qbao@edu.vn": "password123",
+  "partner@fpt-software.vn": "password123",
+  "thuha@alumni.edu.vn": "password123",
+  "admin@promatch.vn": "password123",
+  "hoanglong@student.edu.vn": "password123",
+  "huongvu@student.edu.vn": "password123",
+  "ducthang@student.edu.vn": "password123",
+  "mailinh@student.edu.vn": "password123",
+  "anhtuan@student.edu.vn": "password123",
+  "campus@vng.com.vn": "password123",
+  "talent@tiki.vn": "password123",
+  "qvinh@alumni.edu.vn": "password123",
+};
+
 export const taskAttachments: Map<string, TaskAttachmentFile[]> = new Map();
 
 export const conversations: Conversation[] = [

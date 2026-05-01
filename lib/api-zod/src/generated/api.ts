@@ -15,7 +15,33 @@ export const HealthCheckResponse = zod.object({
 });
 
 /**
- * @summary Get current user (demo)
+ * @summary Log in with email and password
+ */
+export const LoginBody = zod.object({
+  email: zod.string().email(),
+  password: zod.string(),
+});
+
+export const LoginResponse = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  status: zod.enum(["active", "suspended", "pending"]),
+  avatarUrl: zod.string().nullish(),
+  organization: zod.string().nullish(),
+  createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary Log out current session
+ */
+export const LogoutResponse = zod.object({
+  ok: zod.boolean(),
+});
+
+/**
+ * @summary Get current user
  */
 export const GetSessionResponse = zod.object({
   id: zod.string(),
@@ -44,6 +70,16 @@ export const SwitchRoleResponse = zod.object({
   avatarUrl: zod.string().nullish(),
   organization: zod.string().nullish(),
   createdAt: zod.string().optional(),
+});
+
+/**
+ * @summary Register a new user account
+ */
+export const RegisterUserBody = zod.object({
+  name: zod.string(),
+  email: zod.string().email(),
+  password: zod.string(),
+  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
 });
 
 /**

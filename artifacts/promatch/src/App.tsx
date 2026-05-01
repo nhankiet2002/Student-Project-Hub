@@ -1,8 +1,9 @@
-import { Switch, Route, Router as WouterRouter } from "wouter";
+import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout";
+import { AuthProvider, useAuth } from "@/context/auth";
 
 import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
@@ -35,49 +36,65 @@ import RegisterPage from "@/pages/register";
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: false },
+    queries: {
+      retry: false,
+    },
   },
 });
 
+function ProtectedRoutes() {
+  const { user, loading } = useAuth();
+
+  if (loading) return null;
+  if (!user) return <Redirect to="/login" />;
+
+  return (
+    <AppLayout>
+      <Switch>
+        <Route path="/" component={Home} />
+        <Route path="/portfolio" component={Portfolio} />
+        <Route path="/portfolio/public/:userId" component={PortfolioPublic} />
+        <Route path="/topics" component={Topics} />
+        <Route path="/topics/recommended" component={TopicsRecommended} />
+        <Route path="/topics/ai" component={TopicsAI} />
+        <Route path="/topics/:topicId" component={TopicDetail} />
+        <Route path="/trends" component={Trends} />
+        <Route path="/marketplace" component={Marketplace} />
+        <Route path="/marketplace/new" component={MarketplaceNew} />
+        <Route path="/marketplace/:callId" component={MarketplaceDetail} />
+        <Route path="/teams" component={Teams} />
+        <Route path="/projects" component={Projects} />
+        <Route path="/projects/:projectId" component={ProjectDetail} />
+        <Route path="/instructor" component={InstructorDashboard} />
+        <Route path="/knowledge" component={Knowledge} />
+        <Route path="/knowledge/:archiveId" component={KnowledgeDetail} />
+        <Route path="/notifications" component={Notifications} />
+        <Route path="/analytics" component={Analytics} />
+        <Route path="/admin" component={Admin} />
+        <Route path="/admin/users" component={AdminUsers} />
+        <Route path="/admin/moderation" component={AdminModeration} />
+        <Route path="/messages" component={Messages} />
+        <Route path="/settings" component={Settings} />
+        <Route component={NotFound} />
+      </Switch>
+    </AppLayout>
+  );
+}
+
 function Router() {
+  const { user, loading } = useAuth();
+
   return (
     <Switch>
-      {/* Public routes — no sidebar */}
       <Route path="/landing" component={LandingPage} />
-      <Route path="/login" component={LoginPage} />
-      <Route path="/register" component={RegisterPage} />
-
-      {/* App routes — wrapped in AppLayout */}
+      <Route path="/login">
+        {loading ? null : user ? <Redirect to="/" /> : <LoginPage />}
+      </Route>
+      <Route path="/register">
+        {loading ? null : user ? <Redirect to="/" /> : <RegisterPage />}
+      </Route>
       <Route>
-        <AppLayout>
-          <Switch>
-            <Route path="/" component={Home} />
-            <Route path="/portfolio" component={Portfolio} />
-            <Route path="/portfolio/public/:userId" component={PortfolioPublic} />
-            <Route path="/topics" component={Topics} />
-            <Route path="/topics/recommended" component={TopicsRecommended} />
-            <Route path="/topics/ai" component={TopicsAI} />
-            <Route path="/topics/:topicId" component={TopicDetail} />
-            <Route path="/trends" component={Trends} />
-            <Route path="/marketplace" component={Marketplace} />
-            <Route path="/marketplace/new" component={MarketplaceNew} />
-            <Route path="/marketplace/:callId" component={MarketplaceDetail} />
-            <Route path="/teams" component={Teams} />
-            <Route path="/projects" component={Projects} />
-            <Route path="/projects/:projectId" component={ProjectDetail} />
-            <Route path="/instructor" component={InstructorDashboard} />
-            <Route path="/knowledge" component={Knowledge} />
-            <Route path="/knowledge/:archiveId" component={KnowledgeDetail} />
-            <Route path="/notifications" component={Notifications} />
-            <Route path="/analytics" component={Analytics} />
-            <Route path="/admin" component={Admin} />
-            <Route path="/admin/users" component={AdminUsers} />
-            <Route path="/admin/moderation" component={AdminModeration} />
-            <Route path="/messages" component={Messages} />
-            <Route path="/settings" component={Settings} />
-            <Route component={NotFound} />
-          </Switch>
-        </AppLayout>
+        <ProtectedRoutes />
       </Route>
     </Switch>
   );
@@ -88,7 +105,9 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
+          <AuthProvider>
+            <Router />
+          </AuthProvider>
         </WouterRouter>
         <Toaster />
       </TooltipProvider>

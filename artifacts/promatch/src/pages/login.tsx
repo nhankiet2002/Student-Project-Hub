@@ -5,6 +5,7 @@ import { AuthLayout } from "@/components/auth-layout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Eye, EyeOff, Mail, Lock, ArrowRight, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/auth";
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -53,12 +54,13 @@ function SocialButton({
 
 export default function LoginPage() {
   const [, setLocation] = useLocation();
+  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPw, setShowPw] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
   const [loading, setLoading] = useState(false);
-  const [authError, setAuthError] = useState("");
+  const [apiError, setApiError] = useState("");
 
   const errors = {
     email: touched.email
@@ -77,22 +79,15 @@ export default function LoginPage() {
     e.preventDefault();
     setTouched({ email: true, password: true });
     if (!isValid) return;
-    setAuthError("");
+    setApiError("");
     setLoading(true);
     try {
-      const res = await fetch(`${import.meta.env.BASE_URL}api/session/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email }),
-      });
-      if (res.ok) {
-        setLocation("/");
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setAuthError(data.error ?? "Email không đúng hoặc tài khoản không tồn tại");
-      }
-    } catch {
-      setAuthError("Không thể kết nối máy chủ. Vui lòng thử lại.");
+      await login(email, password);
+      setLocation("/");
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : "";
+      const msg = raw.replace(/^HTTP \d+ [^:]+: /, "") || "Email hoặc mật khẩu không đúng";
+      setApiError(msg);
     } finally {
       setLoading(false);
     }
@@ -104,6 +99,20 @@ export default function LoginPage() {
       subtitle="Đăng nhập để tiếp tục với PROMATCH"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        {/* API Error */}
+        <AnimatePresence>
+          {apiError && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+            >
+              {apiError}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Email */}
         <div>
           <label className="text-sm font-medium text-foreground block mb-1.5">
@@ -115,7 +124,7 @@ export default function LoginPage() {
               type="email"
               placeholder="ten@truong.edu.vn"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => { setEmail(e.target.value); setApiError(""); }}
               onBlur={() => setTouched((t) => ({ ...t, email: true }))}
               className={`pl-10 h-11 rounded-xl transition-all ${errors.email ? "border-destructive focus-visible:ring-destructive/30" : ""}`}
             />
@@ -141,7 +150,7 @@ export default function LoginPage() {
               type={showPw ? "text" : "password"}
               placeholder="••••••••"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => { setPassword(e.target.value); setApiError(""); }}
               onBlur={() => setTouched((t) => ({ ...t, password: true }))}
               className={`pl-10 pr-11 h-11 rounded-xl transition-all ${errors.password ? "border-destructive focus-visible:ring-destructive/30" : ""}`}
             />
@@ -156,20 +165,9 @@ export default function LoginPage() {
           <FieldError message={errors.password} />
         </div>
 
-        {/* Auth error */}
-        {authError && (
-          <motion.div
-            initial={{ opacity: 0, y: -4 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-sm text-destructive"
-          >
-            {authError}
-          </motion.div>
-        )}
-
         {/* Hint: available accounts */}
         <div className="rounded-lg bg-muted/60 border border-border px-3 py-2.5 text-xs text-muted-foreground space-y-1">
-          <div className="font-medium text-foreground mb-1">Tài khoản demo:</div>
+          <div className="font-medium text-foreground mb-1">Tài khoản demo (Mật khẩu: password123):</div>
           <div>Sinh viên: <span className="font-mono">minhanh@student.edu.vn</span></div>
           <div>Giảng viên: <span className="font-mono">qbao@edu.vn</span></div>
           <div>Doanh nghiệp: <span className="font-mono">partner@fpt-software.vn</span></div>

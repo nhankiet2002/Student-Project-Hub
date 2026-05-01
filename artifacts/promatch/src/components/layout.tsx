@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { useGetSession, useListNotifications, useListConversations } from "@workspace/api-client-react";
+import { useGetSession, useSwitchRole, useListNotifications, useListConversations } from "@workspace/api-client-react";
+import { useAuth } from "@/context/auth";
+type UserRole = "student" | "instructor" | "enterprise" | "alumni" | "admin";
 import { 
   Bell, 
   BookOpen, 
@@ -25,6 +27,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -48,20 +51,21 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
       refetchOnWindowFocus: true,
     },
   });
+  const { logout } = useAuth();
+  const switchRole = useSwitchRole();
   const queryClient = useQueryClient();
   const [location, setLocation] = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  useEffect(() => {
-    if (!sessionLoading && sessionError) {
-      setLocation("/login");
-    }
-  }, [sessionLoading, sessionError, setLocation]);
-
   const handleLogout = async () => {
-    await fetch(`${import.meta.env.BASE_URL}api/session/logout`, { method: "POST" });
-    queryClient.clear();
+    await logout();
     setLocation("/login");
+  };
+
+  const handleRoleSwitch = (role: UserRole) => {
+    switchRole.mutate({ data: { role } }, {
+      onSuccess: () => queryClient.invalidateQueries(),
+    });
   };
 
   const unreadCount = notifications?.filter(n => !n.read).length || 0;
@@ -261,6 +265,18 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     {roleLabels[session.role]}
                   </span>
                 </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuLabel>Chuyển đổi vai trò (Demo)</DropdownMenuLabel>
+                {Object.entries(roleLabels).map(([role, label]) => (
+                  <DropdownMenuItem 
+                    key={role} 
+                    onClick={() => handleRoleSwitch(role as UserRole)}
+                    className="flex justify-between items-center cursor-pointer"
+                  >
+                    {label}
+                    {session.role === role && <Badge variant="secondary" className="ml-2 text-[10px]">Hiện tại</Badge>}
+                  </DropdownMenuItem>
+                ))}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   onClick={handleLogout}

@@ -34,11 +34,56 @@ paths:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
 
+  /session/login:
+    post:
+      operationId: login
+      tags: [session]
+      summary: Log in with email and password
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email: { type: string, format: email }
+                password: { type: string }
+      responses:
+        "200":
+          description: Logged in user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+
+  /session/logout:
+    post:
+      operationId: logout
+      tags: [session]
+      summary: Log out current session
+      responses:
+        "200":
+          description: Logged out
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [ok]
+                properties:
+                  ok: { type: boolean }
+
   /session/me:
     get:
       operationId: getSession
       tags: [session]
-      summary: Get current user (demo)
+      summary: Get current user
       responses:
         "200":
           description: Current user
@@ -46,6 +91,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
     put:
       operationId: switchRole
       tags: [session]
@@ -67,6 +118,44 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/User"
+
+  /users:
+    post:
+      operationId: registerUser
+      tags: [session]
+      summary: Register a new user account
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, email, password, role]
+              properties:
+                name: { type: string }
+                email: { type: string, format: email }
+                password: { type: string }
+                role:
+                  $ref: "#/components/schemas/UserRole"
+      responses:
+        "201":
+          description: Created user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
+        "409":
+          description: Email already in use
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ApiError"
 
   /skills:
     get:
@@ -948,6 +1037,12 @@ paths:
 
 components:
   schemas:
+    ApiError:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+
     Conversation:
       type: object
       required: [id, type, name, memberIds, unreadCount, createdAt]

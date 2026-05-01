@@ -5,6 +5,10 @@
  * PROMATCH API
  * OpenAPI spec version: 0.1.0
  */
+export interface ApiError {
+  error: string;
+}
+
 export type ConversationType =
   (typeof ConversationType)[keyof typeof ConversationType];
 
@@ -654,7 +658,23 @@ export interface AnalyticsOverview {
   semesterTrend: AnalyticsOverviewSemesterTrendItem[];
 }
 
+export type LoginBody = {
+  email: string;
+  password: string;
+};
+
+export type Logout200 = {
+  ok: boolean;
+};
+
 export type SwitchRoleBody = {
+  role: UserRole;
+};
+
+export type RegisterUserBody = {
+  name: string;
+  email: string;
+  password: string;
   role: UserRole;
 };
 

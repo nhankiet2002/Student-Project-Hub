@@ -12,6 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Loader2 } from "lucide-react";
+import { useAuth } from "@/context/auth";
+import type { UserRole } from "@workspace/api-client-react";
 
 function isValidEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -45,6 +47,7 @@ const ROLES = [
 
 export default function RegisterPage() {
   const [, setLocation] = useLocation();
+  const { register } = useAuth();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -62,6 +65,7 @@ export default function RegisterPage() {
     role: false,
   });
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
 
   const set = (field: keyof typeof form) => (value: string) =>
     setForm((f) => ({ ...f, [field]: value }));
@@ -102,15 +106,27 @@ export default function RegisterPage() {
     form.confirm === form.password &&
     form.role;
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setTouched({ name: true, email: true, password: true, confirm: true, role: true });
     if (!isValid) return;
     setLoading(true);
-    setTimeout(() => {
+    setApiError("");
+    try {
+      await register({
+        name: form.name.trim(),
+        email: form.email,
+        password: form.password,
+        role: form.role as UserRole,
+      });
+      setLocation("/");
+    } catch (err: unknown) {
+      const raw = err instanceof Error ? err.message : "";
+      const msg = raw.replace(/^HTTP \d+ [^:]+: /, "") || "Đăng ký thất bại. Vui lòng thử lại.";
+      setApiError(msg);
+    } finally {
       setLoading(false);
-      setLocation("/login");
-    }, 1200);
+    }
   }
 
   const inputClass = (error: string) =>
@@ -122,6 +138,20 @@ export default function RegisterPage() {
       subtitle="Tham gia PROMATCH — nền tảng quản lý đề tài thông minh"
     >
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
+        {/* API Error */}
+        <AnimatePresence>
+          {apiError && (
+            <motion.div
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm text-destructive"
+            >
+              {apiError}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Full name */}
         <div>
           <label className="text-sm font-medium text-foreground block mb-1.5">
@@ -133,7 +163,7 @@ export default function RegisterPage() {
               type="text"
               placeholder="Nguyễn Văn A"
               value={form.name}
-              onChange={(e) => set("name")(e.target.value)}
+              onChange={(e) => { set("name")(e.target.value); setApiError(""); }}
               onBlur={touch("name")}
               className={"pl-10 " + inputClass(errors.name)}
             />
@@ -152,7 +182,7 @@ export default function RegisterPage() {
               type="email"
               placeholder="ten@truong.edu.vn"
               value={form.email}
-              onChange={(e) => set("email")(e.target.value)}
+              onChange={(e) => { set("email")(e.target.value); setApiError(""); }}
               onBlur={touch("email")}
               className={"pl-10 " + inputClass(errors.email)}
             />
