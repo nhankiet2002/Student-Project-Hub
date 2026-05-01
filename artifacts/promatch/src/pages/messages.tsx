@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   useListConversations,
@@ -7,11 +7,13 @@ import {
   useSendMessage,
   useDeleteMessage,
   useCreateConversation,
+  useSearchUsers,
   useGetSession,
   getListConversationsQueryKey,
   getListConversationMessagesQueryKey,
+  getSearchUsersQueryKey,
 } from "@workspace/api-client-react";
-import type { Conversation, ChatMessage } from "@workspace/api-client-react";
+import type { Conversation, ChatMessage, UserSearchResult } from "@workspace/api-client-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -42,6 +44,8 @@ import {
   Trash2,
   MessageSquare,
   ChevronLeft,
+  X,
+  Check,
 } from "lucide-react";
 import { format, formatDistanceToNow, isToday, isYesterday } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -192,85 +196,292 @@ function MessageBubble({
   );
 }
 
+const ROLE_LABELS: Record<string, string> = {
+  student: "Sinh viên",
+  instructor: "Giảng viên",
+  enterprise: "Doanh nghiệp",
+  alumni: "Cựu sinh viên",
+  admin: "Quản trị",
+};
+
+function UserRow({
+  user,
+  onClick,
+  selected,
+}: {
+  user: UserSearchResult;
+  onClick: () => void;
+  selected?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex items-center gap-3 w-full px-3 py-2 rounded-lg hover:bg-accent text-left transition-colors"
+    >
+      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-semibold flex-shrink-0">
+        {avatarInitials(user.name)}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="text-sm font-medium truncate">{user.name}</div>
+        <div className="text-xs text-muted-foreground truncate">
+          {user.organization ?? ROLE_LABELS[user.role] ?? user.role}
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 flex-shrink-0">
+        {user.known && (
+          <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">
+            Đã quen
+          </span>
+        )}
+        {selected !== undefined && (
+          <div
+            className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+              selected ? "bg-primary border-primary" : "border-muted-foreground/40"
+            }`}
+          >
+            {selected && <Check className="w-3 h-3 text-white" />}
+          </div>
+        )}
+      </div>
+    </button>
+  );
+}
+
 function NewConversationDialog({ onCreated }: { onCreated: (conv: Conversation) => void }) {
   const [open, setOpen] = useState(false);
-  const [type, setType] = useState<"group" | "direct">("group");
-  const [name, setName] = useState("");
+  const [type, setType] = useState<"group" | "direct">("direct");
+  const [groupName, setGroupName] = useState("");
+  const [memberSearch, setMemberSearch] = useState("");
+  const [selectedMembers, setSelectedMembers] = useState<UserSearchResult[]>([]);
   const qc = useQueryClient();
   const { toast } = useToast();
+
+  const searchParams = memberSearch.trim() ? { q: memberSearch.trim() } : undefined;
+  const { data: userResults = [], isLoading: usersLoading } = useSearchUsers(searchParams, {
+    query: {
+      queryKey: getSearchUsersQueryKey(searchParams),
+      enabled: open,
+    },
+  });
+
+  const knownUsers = userResults.filter((u) => u.known);
+  const suggestedUsers = userResults.filter((u) => !u.known);
 
   const createMut = useCreateConversation({
     mutation: {
       onSuccess: (conv) => {
         qc.invalidateQueries({ queryKey: getListConversationsQueryKey() });
         setOpen(false);
-        setName("");
+        resetForm();
         onCreated(conv);
         toast({ title: "Tạo cuộc trò chuyện thành công" });
       },
-      onError: () => toast({ title: "Không thể tạo cuộc trò chuyện", variant: "destructive" }),
+      onError: () =>
+        toast({ title: "Không thể tạo cuộc trò chuyện", variant: "destructive" }),
     },
   });
 
+  function resetForm() {
+    setGroupName("");
+    setMemberSearch("");
+    setSelectedMembers([]);
+    setType("direct");
+  }
+
+  function handleOpenChange(v: boolean) {
+    setOpen(v);
+    if (!v) resetForm();
+  }
+
+  function handleSelectDirect(user: UserSearchResult) {
+    createMut.mutate({
+      data: { type: "direct", name: user.name, memberIds: [user.id] },
+    });
+  }
+
+  function toggleMember(user: UserSearchResult) {
+    setSelectedMembers((prev) =>
+      prev.some((m) => m.id === user.id)
+        ? prev.filter((m) => m.id !== user.id)
+        : [...prev, user],
+    );
+  }
+
+  function handleCreateGroup() {
+    createMut.mutate({
+      data: {
+        type: "group",
+        name: groupName.trim(),
+        memberIds: selectedMembers.map((m) => m.id),
+      },
+    });
+  }
+
+  function renderUserSection(
+    label: string,
+    users: UserSearchResult[],
+    showIfEmpty: boolean = false,
+  ) {
+    if (!showIfEmpty && users.length === 0) return null;
+    return (
+      <>
+        <div className="text-xs font-medium text-muted-foreground px-3 pt-2 pb-1">{label}</div>
+        {users.length === 0 ? (
+          <p className="text-xs text-muted-foreground px-3 pb-2">Chưa có</p>
+        ) : (
+          users.map((u) => (
+            <UserRow
+              key={u.id}
+              user={u}
+              onClick={() => (type === "direct" ? handleSelectDirect(u) : toggleMember(u))}
+              selected={type === "group" ? selectedMembers.some((m) => m.id === u.id) : undefined}
+            />
+          ))
+        )}
+      </>
+    );
+  }
+
+  const canCreateGroup = groupName.trim().length > 0 && selectedMembers.length > 0;
+
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
         <Button variant="ghost" size="icon" className="w-8 h-8">
           <Plus className="w-4 h-4" />
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-w-sm">
+      <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Cuộc trò chuyện mới</DialogTitle>
         </DialogHeader>
-        <div className="space-y-4 pt-2">
-          <div>
-            <label className="text-sm font-medium mb-2 block">Loại</label>
-            <div className="flex gap-2">
-              <Button
-                variant={type === "group" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setType("group")}
-                className="flex items-center gap-1.5"
-              >
-                <Users className="w-3.5 h-3.5" />
-                Nhóm
-              </Button>
-              <Button
-                variant={type === "direct" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setType("direct")}
-                className="flex items-center gap-1.5"
-              >
-                <User className="w-3.5 h-3.5" />
-                Cá nhân
-              </Button>
-            </div>
-          </div>
-          <div>
-            <label className="text-sm font-medium mb-2 block">
-              {type === "group" ? "Tên nhóm" : "Tên người nhận"}
-            </label>
-            <Input
-              placeholder={type === "group" ? "VD: Nhóm đồ án A" : "VD: Nguyễn Minh Anh"}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && name.trim()) {
-                  createMut.mutate({ data: { type, name: name.trim(), memberIds: [] } });
-                }
+
+        <div className="space-y-3">
+          {/* Type toggle */}
+          <div className="flex gap-2">
+            <Button
+              variant={type === "direct" ? "default" : "outline"}
+              size="sm"
+              className="flex-1 gap-1.5"
+              onClick={() => {
+                setType("direct");
+                setSelectedMembers([]);
               }}
+            >
+              <User className="w-3.5 h-3.5" />
+              Cá nhân
+            </Button>
+            <Button
+              variant={type === "group" ? "default" : "outline"}
+              size="sm"
+              className="flex-1 gap-1.5"
+              onClick={() => setType("group")}
+            >
+              <Users className="w-3.5 h-3.5" />
+              Nhóm
+            </Button>
+          </div>
+
+          {/* Group name input */}
+          {type === "group" && (
+            <Input
+              placeholder="Tên nhóm..."
+              value={groupName}
+              onChange={(e) => setGroupName(e.target.value)}
+            />
+          )}
+
+          {/* Selected member chips */}
+          {type === "group" && selectedMembers.length > 0 && (
+            <div className="flex flex-wrap gap-1.5">
+              {selectedMembers.map((m) => (
+                <div
+                  key={m.id}
+                  className="flex items-center gap-1 bg-primary/10 text-primary text-xs px-2.5 py-1 rounded-full"
+                >
+                  <span>{m.name.split(" ").pop()}</span>
+                  <button
+                    type="button"
+                    onClick={() => toggleMember(m)}
+                    className="hover:text-destructive transition-colors"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Search bar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+            <Input
+              className="pl-9"
+              placeholder={
+                type === "direct"
+                  ? "Tìm tên hoặc tổ chức..."
+                  : "Thêm thành viên..."
+              }
+              value={memberSearch}
+              onChange={(e) => setMemberSearch(e.target.value)}
             />
           </div>
-          <Button
-            className="w-full"
-            disabled={!name.trim() || createMut.isPending}
-            onClick={() =>
-              createMut.mutate({ data: { type, name: name.trim(), memberIds: [] } })
-            }
-          >
-            {createMut.isPending ? "Đang tạo..." : "Tạo cuộc trò chuyện"}
-          </Button>
+
+          {/* User list */}
+          <ScrollArea className="h-60 border rounded-lg">
+            {usersLoading ? (
+              <div className="text-center text-sm text-muted-foreground py-10">
+                Đang tải...
+              </div>
+            ) : userResults.length === 0 ? (
+              <div className="text-center text-sm text-muted-foreground py-10">
+                Không tìm thấy người dùng
+              </div>
+            ) : (
+              <div className="p-1">
+                {memberSearch.trim() ? (
+                  userResults.map((u) => (
+                    <UserRow
+                      key={u.id}
+                      user={u}
+                      onClick={() =>
+                        type === "direct" ? handleSelectDirect(u) : toggleMember(u)
+                      }
+                      selected={
+                        type === "group"
+                          ? selectedMembers.some((m) => m.id === u.id)
+                          : undefined
+                      }
+                    />
+                  ))
+                ) : (
+                  <>
+                    {renderUserSection("Đã quen", knownUsers)}
+                    {renderUserSection(
+                      knownUsers.length > 0 ? "Gợi ý thêm" : "Gợi ý",
+                      suggestedUsers,
+                    )}
+                  </>
+                )}
+              </div>
+            )}
+          </ScrollArea>
+
+          {/* Create group button */}
+          {type === "group" && (
+            <Button
+              className="w-full"
+              disabled={!canCreateGroup || createMut.isPending}
+              onClick={handleCreateGroup}
+            >
+              {createMut.isPending
+                ? "Đang tạo..."
+                : selectedMembers.length > 0
+                  ? `Tạo nhóm (${selectedMembers.length} thành viên)`
+                  : "Chọn ít nhất 1 thành viên"}
+            </Button>
+          )}
         </div>
       </DialogContent>
     </Dialog>

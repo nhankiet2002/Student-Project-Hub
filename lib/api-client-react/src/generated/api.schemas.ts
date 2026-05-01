@@ -70,6 +70,15 @@ export interface User {
   createdAt?: string;
 }
 
+export interface UserSearchResult {
+  id: string;
+  name: string;
+  role: UserRole;
+  organization?: string | null;
+  avatarUrl?: string | null;
+  known: boolean;
+}
+
 export interface Skill {
   id: string;
   name: string;
@@ -741,6 +750,13 @@ export const ResolveModerationBodyAction = {
 export type ResolveModerationBody = {
   action: ResolveModerationBodyAction;
   note?: string;
+};
+
+export type SearchUsersParams = {
+  /**
+   * Search term (name or organization)
+   */
+  q?: string;
 };
 
 export type CreateConversationBodyType =

@@ -799,6 +799,41 @@ router.get("/analytics/overview", (_req, res) => {
   });
 });
 
+// ── Users search ────────────────────────────────────────────────────────────
+router.get("/users/search", (req, res) => {
+  const uid = sessionState.currentUserId;
+  const q = typeof req.query.q === "string" ? req.query.q.toLowerCase().trim() : "";
+
+  const knownIds = new Set<string>();
+  conversations.forEach((conv) => {
+    if (conv.memberIds.includes(uid)) {
+      conv.memberIds.forEach((id) => {
+        if (id !== uid) knownIds.add(id);
+      });
+    }
+  });
+
+  const results = users
+    .filter((u) => u.id !== uid)
+    .filter(
+      (u) =>
+        !q ||
+        u.name.toLowerCase().includes(q) ||
+        (u.organization ?? "").toLowerCase().includes(q),
+    )
+    .map((u) => ({
+      id: u.id,
+      name: u.name,
+      role: u.role,
+      organization: u.organization ?? null,
+      avatarUrl: u.avatarUrl ?? null,
+      known: knownIds.has(u.id),
+    }))
+    .sort((a, b) => Number(b.known) - Number(a.known));
+
+  res.json(results);
+});
+
 // ── Conversations ───────────────────────────────────────────────────────────
 router.get("/conversations", (req, res) => {
   const uid = sessionState.currentUserId;

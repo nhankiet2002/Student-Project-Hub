@@ -1101,6 +1101,26 @@ export const GetAnalyticsOverviewResponse = zod.object({
 });
 
 /**
+ * @summary Search users for starting a conversation
+ */
+export const SearchUsersQueryParams = zod.object({
+  q: zod.coerce
+    .string()
+    .optional()
+    .describe("Search term (name or organization)"),
+});
+
+export const SearchUsersResponseItem = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  organization: zod.string().nullish(),
+  avatarUrl: zod.string().nullish(),
+  known: zod.boolean(),
+});
+export const SearchUsersResponse = zod.array(SearchUsersResponseItem);
+
+/**
  * @summary List conversations for current user
  */
 export const ListConversationsResponseItem = zod.object({

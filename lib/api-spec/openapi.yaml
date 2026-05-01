@@ -826,6 +826,26 @@ paths:
               schema:
                 $ref: "#/components/schemas/AnalyticsOverview"
 
+  /users/search:
+    get:
+      operationId: searchUsers
+      summary: Search users for starting a conversation
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+          description: Search term (name or organization)
+      responses:
+        "200":
+          description: List of matching users with known flag
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/UserSearchResult"
+
   /conversations:
     get:
       operationId: listConversations
@@ -982,6 +1002,17 @@ components:
         avatarUrl: { type: string, nullable: true }
         organization: { type: string, nullable: true }
         createdAt: { type: string }
+
+    UserSearchResult:
+      type: object
+      required: [id, name, role, known]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        role: { $ref: "#/components/schemas/UserRole" }
+        organization: { type: string, nullable: true }
+        avatarUrl: { type: string, nullable: true }
+        known: { type: boolean }
 
     Skill:
       type: object

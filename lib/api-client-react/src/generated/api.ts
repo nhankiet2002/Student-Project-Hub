@@ -49,6 +49,7 @@ import type {
   RecommendTeammatesParams,
   RecommendTopicsParams,
   ResolveModerationBody,
+  SearchUsersParams,
   SendMessageBody,
   Skill,
   SwitchRoleBody,
@@ -65,6 +66,7 @@ import type {
   UpdateUserStatusBody,
   UploadTaskAttachmentBody,
   User,
+  UserSearchResult,
 } from "./api.schemas";
 
 import { customFetch } from "../custom-fetch";
@@ -3521,6 +3523,100 @@ export function useGetAnalyticsOverview<
   request?: SecondParameter<typeof customFetch>;
 }): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetAnalyticsOverviewQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Search users for starting a conversation
+ */
+export const getSearchUsersUrl = (params?: SearchUsersParams) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? "null" : value.toString());
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0
+    ? `/api/users/search?${stringifiedParams}`
+    : `/api/users/search`;
+};
+
+export const searchUsers = async (
+  params?: SearchUsersParams,
+  options?: RequestInit,
+): Promise<UserSearchResult[]> => {
+  return customFetch<UserSearchResult[]>(getSearchUsersUrl(params), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getSearchUsersQueryKey = (params?: SearchUsersParams) => {
+  return [`/api/users/search`, ...(params ? [params] : [])] as const;
+};
+
+export const getSearchUsersQueryOptions = <
+  TData = Awaited<ReturnType<typeof searchUsers>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: SearchUsersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchUsers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getSearchUsersQueryKey(params);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof searchUsers>>> = ({
+    signal,
+  }) => searchUsers(params, { signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof searchUsers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type SearchUsersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof searchUsers>>
+>;
+export type SearchUsersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary Search users for starting a conversation
+ */
+
+export function useSearchUsers<
+  TData = Awaited<ReturnType<typeof searchUsers>>,
+  TError = ErrorType<unknown>,
+>(
+  params?: SearchUsersParams,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof searchUsers>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getSearchUsersQueryOptions(params, options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
