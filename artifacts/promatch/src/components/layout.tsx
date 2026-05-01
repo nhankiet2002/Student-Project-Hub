@@ -23,7 +23,8 @@ import {
   Users,
   FolderKanban,
   UserCircle,
-  Building2
+  Building2,
+  UserRound,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -265,6 +266,14 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
                     {roleLabels[session.role]}
                   </span>
                 </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => setLocation("/profile")}
+                  className="flex items-center gap-2 cursor-pointer"
+                >
+                  <UserRound className="w-4 h-4" />
+                  Hồ sơ cá nhân
+                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuLabel>Chuyển đổi vai trò (Demo)</DropdownMenuLabel>
                 {Object.entries(roleLabels).map(([role, label]) => (

@@ -1,6 +1,7 @@
 import { Switch, Route, Router as WouterRouter, Redirect } from "wouter";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
+import { Toaster as SonnerToaster } from "sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppLayout } from "@/components/layout";
 import { AuthProvider, useAuth } from "@/context/auth";
@@ -29,6 +30,7 @@ import Admin from "@/pages/admin";
 import AdminUsers from "@/pages/admin-users";
 import AdminModeration from "@/pages/admin-moderation";
 import Settings from "@/pages/settings";
+import Profile from "@/pages/profile";
 import Messages from "@/pages/messages";
 import LandingPage from "@/pages/landing";
 import LoginPage from "@/pages/login";
@@ -75,6 +77,7 @@ function ProtectedRoutes() {
         <Route path="/admin/moderation" component={AdminModeration} />
         <Route path="/messages" component={Messages} />
         <Route path="/settings" component={Settings} />
+        <Route path="/profile" component={Profile} />
         <Route component={NotFound} />
       </Switch>
     </AppLayout>
@@ -110,6 +113,7 @@ function App() {
           </AuthProvider>
         </WouterRouter>
         <Toaster />
+        <SonnerToaster richColors position="top-right" />
       </TooltipProvider>
     </QueryClientProvider>
   );

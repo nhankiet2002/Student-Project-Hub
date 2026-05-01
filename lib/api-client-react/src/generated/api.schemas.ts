@@ -671,6 +671,11 @@ export type SwitchRoleBody = {
   role: UserRole;
 };
 
+export type UpdateProfileBody = {
+  name?: string;
+  avatarUrl?: string | null;
+};
+
 export type RegisterUserBody = {
   name: string;
   email: string;

@@ -73,6 +73,25 @@ export const SwitchRoleResponse = zod.object({
 });
 
 /**
+ * @summary Update current user profile (name, avatarUrl)
+ */
+export const UpdateProfileBody = zod.object({
+  name: zod.string().optional(),
+  avatarUrl: zod.string().nullish(),
+});
+
+export const UpdateProfileResponse = zod.object({
+  id: zod.string(),
+  name: zod.string(),
+  email: zod.string(),
+  role: zod.enum(["student", "instructor", "enterprise", "alumni", "admin"]),
+  status: zod.enum(["active", "suspended", "pending"]),
+  avatarUrl: zod.string().nullish(),
+  organization: zod.string().nullish(),
+  createdAt: zod.string().optional(),
+});
+
+/**
  * @summary Register a new user account
  */
 export const RegisterUserBody = zod.object({

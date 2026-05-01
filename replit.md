@@ -67,9 +67,23 @@ Monorepo (pnpm workspaces). All UI text is Vietnamese. No emojis in UI.
 - Chat history is client-side only (no DB persistence); reset button clears the conversation.
 - Deep-link with `?chat=open` to auto-open the panel.
 
+### User Profile Page
+- Route `/profile` shows the current user's info: avatar, name, email, role, bio, and account metadata.
+- Name and bio are inline-editable: click the pencil icon → input/textarea appears → edit → click "Lưu".
+- Avatar URL is editable via "Đổi ảnh đại diện" button.
+- Name and avatarUrl changes call `PATCH /api/session/me` (also syncs the portfolio record).
+- Bio changes call `PUT /api/portfolios/:userId`.
+- Email, role, and organization are shown read-only.
+- A "Hồ sơ cá nhân" link in the top-right user dropdown navigates to `/profile`.
+
+### Toast Notifications
+- Both `sonner` (`toast`) and shadcn `useToast` are used across the app.
+- `App.tsx` mounts both `<Toaster />` (shadcn, for push notification toasts) and `<SonnerToaster richColors position="top-right" />` (Sonner, for mutation feedback toasts).
+
 ## Pages (frontend routes)
 - `/` Dashboard (role-aware)
 - `/portfolio`, `/portfolio/public/:userId`
+- `/profile` (editable user profile: name, bio, avatar)
 - `/topics`, `/topics/:topicId`, `/topics/recommended`, `/topics/ai`
 - `/trends`
 - `/marketplace`, `/marketplace/:callId`, `/marketplace/new`

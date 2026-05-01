@@ -86,6 +86,21 @@ router.put("/session/me", (req, res) => {
   res.json(currentUser());
 });
 
+router.patch("/session/me", (req, res) => {
+  if (!sessionState.currentUserId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const user = users.find((u) => u.id === sessionState.currentUserId);
+  if (!user) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const { name, avatarUrl } = req.body as { name?: string; avatarUrl?: string | null };
+  if (name !== undefined && name.trim()) user.name = name.trim();
+  if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
+  const portfolio = portfolios[user.id];
+  if (portfolio) {
+    if (name !== undefined && name.trim()) portfolio.name = name.trim();
+    if (avatarUrl !== undefined) portfolio.avatarUrl = avatarUrl;
+  }
+  res.json(user);
+});
+
 router.post("/users", (req, res) => {
   const { name, email, password, role } = req.body as {
     name?: string;
