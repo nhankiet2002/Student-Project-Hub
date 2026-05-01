@@ -4,7 +4,6 @@ import {
   users,
   portfolios,
   topics,
-  sessionState,
 } from "../data/store.js";
 
 const router: IRouter = Router();
@@ -14,8 +13,8 @@ interface ChatMessage {
   content: string;
 }
 
-function buildSystemPrompt(): string {
-  const user = users.find((u) => u.id === sessionState.currentUserId);
+function buildSystemPrompt(currentUserId: string | null | undefined): string {
+  const user = currentUserId ? users.find((u) => u.id === currentUserId) : undefined;
   const portfolio = user ? portfolios[user.id] : undefined;
 
   const intro = `Bạn là PROMATCH AI — trợ lý ảo thân thiện cho sinh viên trên nền tảng PROMATCH (hỗ trợ đồ án tốt nghiệp đại học). Luôn trả lời bằng TIẾNG VIỆT, ngắn gọn, dùng dấu đầu dòng khi liệt kê. Không dùng emoji. Giọng văn ấm áp, khích lệ, định hướng hành động cụ thể.
@@ -95,7 +94,7 @@ router.post("/chatbot/message", async (req, res) => {
   res.flushHeaders?.();
 
   try {
-    const systemPrompt = buildSystemPrompt();
+    const systemPrompt = buildSystemPrompt(req.session.userId);
 
     const stream = await openai.chat.completions.create({
       model: "gpt-5.4",

@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import multer from "multer";
 import {
   skills,
@@ -15,7 +15,6 @@ import {
   notifications,
   moderation,
   aiQuotaByUser,
-  sessionState,
   userPasswords,
   conversations,
   chatMessages,
@@ -38,18 +37,19 @@ const upload = multer({
 
 const router: IRouter = Router();
 
-function currentUser() {
-  if (!sessionState.currentUserId) return null;
-  return users.find((u) => u.id === sessionState.currentUserId) ?? null;
+function currentUser(req: Request) {
+  const userId = req.session.userId;
+  if (!userId) return null;
+  return users.find((u) => u.id === userId) ?? null;
 }
 
-function safeCurrentUser() {
-  return currentUser() ?? users[0]!;
+function safeCurrentUser(req: Request) {
+  return currentUser(req) ?? users[0]!;
 }
 
 // ===== Session =====
-router.get("/session/me", (_req, res) => {
-  const user = currentUser();
+router.get("/session/me", (req, res) => {
+  const user = currentUser(req);
   if (!user) { res.status(401).json({ error: "Chưa đăng nhập" }); return; }
   res.json(user);
 });
@@ -61,17 +61,18 @@ router.post("/session/login", (req, res) => {
   if (!user) { res.status(401).json({ error: "Email hoặc mật khẩu không đúng" }); return; }
   const storedPassword = userPasswords[user.email];
   if (!storedPassword || storedPassword !== password) { res.status(401).json({ error: "Email hoặc mật khẩu không đúng" }); return; }
-  sessionState.currentUserId = user.id;
+  req.session.userId = user.id;
   res.json(user);
 });
 
-router.post("/session/logout", (_req, res) => {
-  sessionState.currentUserId = null;
-  res.json({ ok: true });
+router.post("/session/logout", (req, res) => {
+  req.session.destroy(() => {
+    res.json({ ok: true });
+  });
 });
 
 router.put("/session/me", (req, res) => {
-  if (!sessionState.currentUserId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  if (!req.session.userId) { res.status(401).json({ error: "Not authenticated" }); return; }
   const role = req.body?.role as string;
   const map: Record<string, string> = {
     student: "u_student",
@@ -81,14 +82,14 @@ router.put("/session/me", (req, res) => {
     admin: "u_admin",
   };
   if (map[role]) {
-    sessionState.currentUserId = map[role]!;
+    req.session.userId = map[role]!;
   }
-  res.json(currentUser());
+  res.json(currentUser(req));
 });
 
 router.patch("/session/me", (req, res) => {
-  if (!sessionState.currentUserId) { res.status(401).json({ error: "Not authenticated" }); return; }
-  const user = users.find((u) => u.id === sessionState.currentUserId);
+  if (!req.session.userId) { res.status(401).json({ error: "Not authenticated" }); return; }
+  const user = users.find((u) => u.id === req.session.userId);
   if (!user) { res.status(401).json({ error: "Not authenticated" }); return; }
   const { name, avatarUrl } = req.body as { name?: string; avatarUrl?: string | null };
   if (name !== undefined && name.trim()) user.name = name.trim();
@@ -134,7 +135,7 @@ router.post("/users", (req, res) => {
   };
   users.push(newUser);
   userPasswords[email] = password;
-  sessionState.currentUserId = newUser.id;
+  req.session.userId = newUser.id;
   res.status(201).json(newUser);
 });
 
@@ -248,7 +249,7 @@ router.post("/topics", (req, res) => {
     domain: body.domain || "Web Development",
     difficulty: body.difficulty || "intermediate",
     source: "student",
-    sourceLabel: safeCurrentUser().name,
+    sourceLabel: safeCurrentUser(req).name,
     requiredSkills: body.requiredSkills || [],
     teamSize: body.teamSize || 3,
     feasibility: "Khả thi",
@@ -265,7 +266,7 @@ router.post("/topics", (req, res) => {
 });
 
 router.get("/topics/recommend", (req, res) => {
-  const u = safeCurrentUser();
+  const u = safeCurrentUser(req);
   const portfolio = portfolios[u.id];
   const userSkills = new Set((portfolio?.skills || []).map((s) => s.skillId));
   const userInterests = new Set((portfolio?.interests || []).map((i) => i.toLowerCase()));
@@ -315,7 +316,7 @@ router.get("/topics/:topicId", (req, res) => {
 });
 
 router.post("/topics/ai-generate", (req, res) => {
-  const u = safeCurrentUser();
+  const u = safeCurrentUser(req);
   const used = aiQuotaByUser[u.id] || 0;
   if (used >= 10) {
     return res.status(429).json({ error: "Đã đạt giới hạn 10 lần/tháng" });
@@ -404,7 +405,7 @@ router.get("/calls", (req, res) => {
 
 router.post("/calls", (req, res) => {
   const body = req.body || {};
-  const u = safeCurrentUser();
+  const u = safeCurrentUser(req);
   const newCall: CallForProject = {
     id: `cf_${String(calls.length + 1).padStart(3, "0")}`,
     title: body.title || "Đặt hàng mới",
@@ -438,7 +439,7 @@ router.post("/calls/:callId/apply", (req, res) => {
   return res.json({
     id: `ap_${Date.now()}`,
     callId: c.id,
-    applicantName: safeCurrentUser().name,
+    applicantName: safeCurrentUser(req).name,
     message: req.body?.message || "",
     status: "submitted",
     appliedAt: new Date().toISOString(),
@@ -447,7 +448,7 @@ router.post("/calls/:callId/apply", (req, res) => {
 
 // ===== Teams =====
 router.get("/teams/recommend", (req, res) => {
-  const u = safeCurrentUser();
+  const u = safeCurrentUser(req);
   const myPortfolio = portfolios[u.id];
   const mySkills = new Set((myPortfolio?.skills || []).map((s) => s.skillId));
   const topicId = req.query.topicId as string | undefined;
@@ -515,7 +516,7 @@ router.post("/projects", (req, res) => {
   projects.unshift(newProject);
   projectDetails[newProject.id] = {
     project: newProject,
-    members: (body.memberIds || [safeCurrentUser().id]).map((uid: string, i: number) => {
+    members: (body.memberIds || [safeCurrentUser(req).id]).map((uid: string, i: number) => {
       const u = users.find((x) => x.id === uid);
       return {
         userId: uid,
@@ -528,7 +529,7 @@ router.post("/projects", (req, res) => {
     milestones: [],
     description: `Dự án mới được tạo với đề tài: ${topic?.title || ""}`,
     recentActivity: [
-      { id: `act_${Date.now()}`, message: "Đã tạo workspace dự án", timestamp: new Date().toISOString(), actor: safeCurrentUser().name },
+      { id: `act_${Date.now()}`, message: "Đã tạo workspace dự án", timestamp: new Date().toISOString(), actor: safeCurrentUser(req).name },
     ],
   };
   contributions[newProject.id] = projectDetails[newProject.id]!.members.map((m) => ({
@@ -612,7 +613,7 @@ router.post(
       mimeType: req.file.mimetype,
       size: req.file.size,
       uploadedAt: new Date().toISOString(),
-      uploadedBy: safeCurrentUser().name,
+      uploadedBy: safeCurrentUser(req).name,
       buffer: req.file.buffer,
     };
 
@@ -761,7 +762,7 @@ router.put("/projects/:projectId/status", (req, res) => {
       id: `act_${Date.now()}`,
       message: `Trạng thái dự án chuyển từ "${oldStatus}" sang "${newStatus}"`,
       timestamp: new Date().toISOString(),
-      actor: safeCurrentUser().name,
+      actor: safeCurrentUser(req).name,
     });
   }
   const statusLabels: Record<string, string> = {
@@ -878,7 +879,7 @@ router.get("/analytics/overview", (_req, res) => {
 
 // ── Users search ────────────────────────────────────────────────────────────
 router.get("/users/search", (req, res) => {
-  const uid = sessionState.currentUserId;
+  const uid = req.session.userId;
   if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const q = typeof req.query.q === "string" ? req.query.q.toLowerCase().trim() : "";
 
@@ -913,8 +914,8 @@ router.get("/users/search", (req, res) => {
 });
 
 // ── Conversations ───────────────────────────────────────────────────────────
-router.get("/conversations", (_req, res) => {
-  const uid = sessionState.currentUserId;
+router.get("/conversations", (req, res) => {
+  const uid = req.session.userId;
   if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const myConvs = conversations
     .filter((c) => c.memberIds.includes(uid))
@@ -927,7 +928,7 @@ router.get("/conversations", (_req, res) => {
 });
 
 router.post("/conversations", (req, res) => {
-  const uid = sessionState.currentUserId;
+  const uid = req.session.userId;
   if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const body = req.body as { type?: string; name?: string; memberIds?: string[]; projectId?: string };
   const type = body.type === "direct" ? "direct" : "group";
@@ -952,7 +953,7 @@ router.post("/conversations", (req, res) => {
 });
 
 router.get("/conversations/:conversationId/messages", (req, res) => {
-  const uid = sessionState.currentUserId;
+  const uid = req.session.userId;
   if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const convId = String(req.params["conversationId"] ?? "");
   const conv = conversations.find((c) => c.id === convId);
@@ -964,7 +965,7 @@ router.get("/conversations/:conversationId/messages", (req, res) => {
 });
 
 router.post("/conversations/:conversationId/messages", (req, res) => {
-  const uid = sessionState.currentUserId;
+  const uid = req.session.userId;
   if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const convId = String(req.params["conversationId"] ?? "");
   const conv = conversations.find((c) => c.id === convId);
@@ -992,7 +993,7 @@ router.post("/conversations/:conversationId/messages", (req, res) => {
 });
 
 router.delete("/conversations/:conversationId/messages/:messageId", (req, res) => {
-  const uid = sessionState.currentUserId;
+  const uid = req.session.userId;
   if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const convId = String(req.params["conversationId"] ?? "");
   const msgId = String(req.params["messageId"] ?? "");
