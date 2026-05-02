@@ -20,6 +20,7 @@ model User {
   createdAt    DateTime    @default(now()) @map("created_at")
   Portfolio    Portfolio?
   Projects     ProjectMember[]
+  Applications Application[]
 }
 
 model Portfolio {
@@ -162,6 +163,8 @@ model CallForProject {
   skillTags          Json     @default("[]") @map("skill_tags")
   createdAt          DateTime @default(now()) @map("created_at")
 
+  Applications       Application[]
+
   @@map("calls_for_projects")
 }
 
@@ -208,4 +211,19 @@ model Message {
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@map("messages")
+}
+model Application {
+  id               String   @id @default(uuid())
+  callId           String   @map("call_id")
+  applicantId      String   @map("applicant_id")
+  applicantName    String   @map("applicant_name")
+  applicantAvatar  String?  @map("applicant_avatar")
+  message          String
+  status           String   @default("submitted") // submitted, reviewing, accepted, rejected
+  appliedAt        DateTime @default(now()) @map("applied_at")
+  
+  call             CallForProject @relation(fields: [callId], references: [id], onDelete: Cascade)
+  applicant        User           @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+
+  @@map("applications")
 }

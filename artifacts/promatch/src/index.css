@@ -171,3 +171,18 @@
     @apply font-sans antialiased bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .hover-elevate {
+    @apply transition-all duration-200;
+  }
+  .hover-elevate:hover {
+    @apply -translate-y-0.5;
+    box-shadow: 0 4px 12px var(--elevate-2);
+  }
+  .active-elevate-2:active {
+    @apply translate-y-0 scale-[0.98];
+    box-shadow: 0 2px 4px var(--elevate-1);
+  }
+}
+

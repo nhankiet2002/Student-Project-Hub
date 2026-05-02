@@ -5,8 +5,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { UserPlus, Star, CheckCircle2, AlertCircle } from "lucide-react";
+import { UserPlus, Star, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 export default function Teams() {
   const searchString = useSearch();
@@ -18,10 +19,22 @@ export default function Teams() {
   const { data: topics } = useListTopics();
   const queryClient = useQueryClient();
 
+  const { toast } = useToast();
   const inviteMutation = useSendTeamInvitation({
     mutation: {
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+        toast({
+          title: "Đã gửi lời mời",
+          description: "Lời mời tham gia nhóm đã được gửi thành công.",
+        });
+      },
+      onError: () => {
+        toast({
+          title: "Lỗi",
+          description: "Không thể gửi lời mời. Vui lòng thử lại sau.",
+          variant: "destructive",
+        });
       },
     },
   });
@@ -113,8 +126,17 @@ export default function Teams() {
                 </div>
               </CardContent>
               <CardFooter className="pt-4 border-t">
-                <Button className="w-full" onClick={() => handleInvite(candidate.user.name)}>
-                  <UserPlus className="w-4 h-4 mr-2" /> Mời vào nhóm
+                <Button 
+                  className="w-full" 
+                  onClick={() => handleInvite(candidate.user.name)}
+                  disabled={inviteMutation.isPending}
+                >
+                  {inviteMutation.isPending ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  ) : (
+                    <UserPlus className="w-4 h-4 mr-2" />
+                  )}
+                  {inviteMutation.isPending ? "Đang gửi..." : "Mời vào nhóm"}
                 </Button>
               </CardFooter>
             </Card>

@@ -35,6 +35,7 @@ import Messages from "@/pages/messages";
 import LandingPage from "@/pages/landing";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
+import EnterpriseApplications from "@/pages/enterprise-applications";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +77,7 @@ function ProtectedRoutes() {
         <Route path="/admin" component={Admin} />
         <Route path="/admin/users" component={AdminUsers} />
         <Route path="/admin/moderation" component={AdminModeration} />
+        <Route path="/enterprise/applications" component={EnterpriseApplications} />
         <Route path="/messages" component={Messages} />
         <Route path="/settings" component={Settings} />
         <Route path="/profile" component={Profile} />

@@ -123,6 +123,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         return [
           { href: "/", label: "Bảng điều khiển", icon: LayoutDashboard },
           { href: "/marketplace", label: "Tất cả đặt hàng", icon: Briefcase },
+          { href: "/enterprise/applications", label: "Ứng tuyển đã nhận", icon: Users },
           { href: "/marketplace/new", label: "Tạo đặt hàng mới", icon: Briefcase },
           { href: "/messages", label: "Tin nhắn", icon: MessageSquare, badge: totalMsgUnread },
           { href: "/portfolio", label: "Hồ sơ doanh nghiệp", icon: Building2 },

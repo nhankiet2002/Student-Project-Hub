@@ -89,15 +89,41 @@ export function NotificationPopover({ unreadCount }: NotificationPopoverProps) {
 
   const markReadMutation = useMarkNotificationRead({
     mutation: {
-      onSuccess: () =>
-        queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() }),
+      onMutate: async ({ notificationId }) => {
+        await queryClient.cancelQueries({ queryKey: getListNotificationsQueryKey() });
+        const previous = queryClient.getQueryData(getListNotificationsQueryKey());
+        queryClient.setQueryData(getListNotificationsQueryKey(), (old: any) => {
+          if (!Array.isArray(old)) return old;
+          return old.map(n => n.id === notificationId ? { ...n, read: true } : n);
+        });
+        return { previous };
+      },
+      onError: (_err, _vars, context) => {
+        if (context?.previous) queryClient.setQueryData(getListNotificationsQueryKey(), context.previous);
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+      },
     },
   });
 
   const markAllMutation = useMarkAllNotificationsRead({
     mutation: {
-      onSuccess: () =>
-        queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() }),
+      onMutate: async () => {
+        await queryClient.cancelQueries({ queryKey: getListNotificationsQueryKey() });
+        const previous = queryClient.getQueryData(getListNotificationsQueryKey());
+        queryClient.setQueryData(getListNotificationsQueryKey(), (old: any) => {
+          if (!Array.isArray(old)) return old;
+          return old.map(n => ({ ...n, read: true }));
+        });
+        return { previous };
+      },
+      onError: (_err, _vars, context) => {
+        if (context?.previous) queryClient.setQueryData(getListNotificationsQueryKey(), context.previous);
+      },
+      onSettled: () => {
+        queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+      },
     },
   });
 

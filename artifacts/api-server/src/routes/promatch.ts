@@ -439,23 +439,81 @@ router.get("/calls/:callId", async (req, res) => {
 });
 
 router.post("/calls/:callId/apply", async (req, res) => {
-  const user = await getPrismaUser(req);
-  if (!user) return res.status(401).json({ error: "Not authenticated" });
+  const uid = req.session.userId;
+  if (!uid) return res.status(401).json({ error: "Not authenticated" });
+  
+  const user = await prisma.user.findUnique({ where: { id: uid } });
+  if (!user) return res.status(401).json({ error: "User not found" });
+
   const c = await prisma.callForProject.findUnique({ where: { id: req.params.callId } });
-  if (!c) return res.status(404).json({ error: "Not found" });
+  if (!c) return res.status(404).json({ error: "Call not found" });
+
+  // Create real application record
+  const app = await prisma.application.create({
+    data: {
+      callId: c.id,
+      applicantId: user.id,
+      applicantName: user.name,
+      applicantAvatar: user.avatarUrl,
+      message: req.body?.message || "",
+      status: "submitted",
+    }
+  });
+
+  // Update count
   await prisma.callForProject.update({
     where: { id: c.id },
-    data: { applicationCount: c.applicationCount + 1 }
+    data: { applicationCount: { increment: 1 } }
   });
-  return res.json({
-    id: `ap_${Date.now()}`,
-    callId: c.id,
-    applicantName: user.name,
-    message: req.body?.message || "",
-    status: "submitted",
-    appliedAt: new Date().toISOString(),
+
+  // Notify enterprise (find enterprise user by organization name or just find users with role enterprise and organization matching)
+  const enterpriseUsers = await prisma.user.findMany({
+    where: { role: 'enterprise', organization: c.enterpriseName }
   });
+
+  for (const eu of enterpriseUsers) {
+    await prisma.notification.create({
+      data: {
+        userId: eu.id,
+        title: "Ứng tuyển mới",
+        body: `${user.name} đã ứng tuyển vào đề tài "${c.title}"`,
+        type: "call",
+        link: `/enterprise/applications`,
+      }
+    });
+  }
+
+  return res.json(app);
 });
+
+router.get("/enterprise/applications", async (req, res) => {
+  const uid = req.session.userId;
+  if (!uid) return res.status(401).json({ error: "Not authenticated" });
+  
+  const user = await prisma.user.findUnique({ where: { id: uid } });
+  if (!user || user.role !== 'enterprise') return res.status(403).json({ error: "Forbidden" });
+
+  // Get all calls by this enterprise
+  const myCalls = await prisma.callForProject.findMany({
+    where: { enterpriseName: user.organization || user.name }
+  });
+
+  const callIds = myCalls.map(c => c.id);
+
+  const applications = await prisma.application.findMany({
+    where: { callId: { in: callIds } },
+    include: { 
+      call: true,
+      applicant: {
+        include: { Portfolio: true }
+      }
+    },
+    orderBy: { appliedAt: 'desc' }
+  });
+
+  res.json(applications);
+});
+
 
 // ===== Teams =====
 router.get("/teams/recommend", async (req, res) => {
@@ -479,21 +537,25 @@ router.get("/teams/recommend", async (req, res) => {
     .filter(c => c.Portfolio)
     .map((c) => {
       const cp = c.Portfolio!;
-      const cSkills = new Set<string>((cp.skills as any[] || []).map((s: any) => (s.name || '').toLowerCase()));
+      const cSkillsArr: any[] = cp.skills as any[] || [];
+      const cSkills = new Set<string>(cSkillsArr.map((s: any) => (s.name || '').toLowerCase()));
+      
       const shared = [...cSkills].filter(s => mySkills.has(s));
       const complementary = [...cSkills].filter(s => !mySkills.has(s));
       const fillsGap = topic ? [...required].filter(s => !mySkills.has(s) && cSkills.has(s)).length : 0;
+      
       const score = Math.min(1, complementary.length / 5) * 0.5 + (fillsGap > 0 ? 0.4 : 0.1) + Math.min(1, cp.contributionScore / 100) * 0.1;
-      const skillsArr: any[] = cp.skills as any[] || [];
-      const suggestedRole = skillsArr.some((s: any) => /figma|ux|ui/i.test(s.name || ''))
+      
+      const suggestedRole = cSkillsArr.some((s: any) => /figma|ux|ui/i.test(s.name || ''))
         ? 'UI/UX Designer'
-        : skillsArr.some((s: any) => /node|express|backend/i.test(s.name || ''))
+        : cSkillsArr.some((s: any) => /node|express|backend/i.test(s.name || ''))
           ? 'Backend Developer'
-          : skillsArr.some((s: any) => /flutter|react native|mobile/i.test(s.name || ''))
+          : cSkillsArr.some((s: any) => /flutter|react native|mobile/i.test(s.name || ''))
             ? 'Mobile Developer'
-            : skillsArr.some((s: any) => /python|ml|machine/i.test(s.name || ''))
+            : cSkillsArr.some((s: any) => /python|ml|machine/i.test(s.name || ''))
               ? 'ML Engineer'
               : 'Full-stack Developer';
+              
       return {
         user: { id: c.id, name: c.name, role: c.role, organization: c.organization, avatarUrl: c.avatarUrl },
         complementarityScore: Math.round(score * 100) / 100,
@@ -771,28 +833,40 @@ async function pushNotification(userId: string, input: { title: string, body: st
 }
 
 router.get("/notifications", async (req, res) => {
-  const user = await getPrismaUser(req);
-  if (!user) return res.json([]);
+  const uid = req.session.userId;
+  if (!uid) return res.json([]);
   const items = await prisma.notification.findMany({ 
-    where: { userId: user.id },
+    where: { userId: uid },
     orderBy: { createdAt: 'desc' }
   });
   res.json(items);
 });
 
-router.post("/notifications/:notificationId/read", (req, res) => {
-  const n = notifications.find((x) => x.id === req.params.notificationId) as Notification | undefined;
-  if (!n) return res.status(404).json({ error: "Not found" });
-  n.read = true;
-  return res.json(n);
+router.post("/notifications/:notificationId/read", async (req, res) => {
+  const uid = req.session.userId;
+  if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
+  
+  try {
+    const n = await prisma.notification.update({
+      where: { id: req.params.notificationId, userId: uid },
+      data: { read: true }
+    });
+    res.json(n);
+  } catch (err) {
+    res.status(404).json({ error: "Not found or not authorized" });
+  }
 });
 
-router.post("/notifications/read-all", (_req, res) => {
-  let count = 0;
-  for (const n of notifications) {
-    if (!n.read) { n.read = true; count++; }
-  }
-  res.json({ count });
+router.post("/notifications/read-all", async (req, res) => {
+  const uid = req.session.userId;
+  if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
+  
+  const result = await prisma.notification.updateMany({
+    where: { userId: uid, read: false },
+    data: { read: true }
+  });
+  
+  res.json({ count: result.count });
 });
 
 // Push notification: team invitation
@@ -968,17 +1042,20 @@ router.get("/users/search", async (req, res) => {
   if (!uid) { res.status(401).json({ error: "Not authenticated" }); return; }
   const q = typeof req.query.q === "string" ? req.query.q.toLowerCase().trim() : "";
 
-  // We find users matching the search query
-  const results = await prisma.user.findMany({
-    where: {
-      id: { not: uid },
-      OR: [
-        { name: { contains: q, mode: 'insensitive' } },
-        { organization: { contains: q, mode: 'insensitive' } },
-      ],
-    },
-    take: 20,
-  });
+  const where: any = { id: { not: uid } };
+  if (q) {
+    where.OR = [
+      { name: { contains: q, mode: 'insensitive' } },
+      { organization: { contains: q, mode: 'insensitive' } },
+    ];
+  }
+
+  const results = await prisma.user.findMany({ where, take: 30 });
+
+  // Get conversations of current user to mark "known" contacts
+  const allConvs = await prisma.conversation.findMany({ where: {} });
+  const myConvs = allConvs.filter(c => (c.memberIds as string[]).includes(uid));
+  const knownIds = new Set(myConvs.flatMap(c => (c.memberIds as string[]).filter(id => id !== uid)));
 
   res.json(results.map(u => ({
     id: u.id,
@@ -986,7 +1063,7 @@ router.get("/users/search", async (req, res) => {
     role: u.role,
     organization: u.organization ?? null,
     avatarUrl: u.avatarUrl ?? null,
-    known: true, // For demo purposes
+    known: knownIds.has(u.id),
   })));
 });
 

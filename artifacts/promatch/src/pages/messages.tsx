@@ -263,7 +263,7 @@ function NewConversationDialog({
   const qc = useQueryClient();
   const { toast } = useToast();
 
-  const searchParams = memberSearch.trim() ? { q: memberSearch.trim() } : undefined;
+  const searchParams = { q: memberSearch.trim() };
   const { data: userResults = [], isLoading: usersLoading } = useSearchUsers(searchParams, {
     query: {
       queryKey: getSearchUsersQueryKey(searchParams),

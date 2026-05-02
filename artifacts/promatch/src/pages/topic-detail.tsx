@@ -3,10 +3,10 @@ import { useParams, useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Users, CheckCircle2, XCircle, BarChart3 } from "lucide-react";
-import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UserPlus, Star, CheckCircle2, AlertCircle, Loader2, Users, XCircle, BarChart3 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { MemberSuggestions } from "@/components/member-suggestions";
 
 export default function TopicDetail() {
   const { topicId } = useParams<{ topicId: string }>();
@@ -146,12 +146,11 @@ export default function TopicDetail() {
                 {createProject.isPending ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                 Tạo nhóm với đề tài này
               </Button>
-              <Button variant="outline" className="w-full" onClick={() => setLocation(`/teams?topicId=${topic.id}`)}>
-                Tìm thành viên phù hợp
-              </Button>
             </div>
           </CardContent>
         </Card>
+
+        <MemberSuggestions topicId={topic.id} topicTitle={topic.title} />
       </div>
     </div>
   );

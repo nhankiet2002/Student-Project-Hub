@@ -113,6 +113,79 @@ async function main() {
     }
   });
 
+  // Additional Student Portfolios
+  await prisma.portfolio.create({
+    data: {
+      userId: 'u_s2',
+      name: 'Đỗ Hoàng Long',
+      bio: 'Yêu thích lập trình backend và tối ưu hệ thống.',
+      major: 'Công nghệ Phần mềm',
+      year: 4,
+      interests: ['Backend', 'Database', 'Cloud'],
+      skills: [
+        { name: 'Node.js', level: 'advanced' },
+        { name: 'PostgreSQL', level: 'intermediate' },
+        { name: 'Docker', level: 'beginner' },
+      ],
+      completedProjects: 2,
+      contributionScore: 92,
+    }
+  });
+
+  await prisma.portfolio.create({
+    data: {
+      userId: 'u_s3',
+      name: 'Vũ Thị Hương',
+      bio: 'Nhà thiết kế giao diện với tư duy hướng người dùng.',
+      major: 'Thiết kế đồ họa',
+      year: 3,
+      interests: ['UI/UX', 'Mobile Design', 'Frontend'],
+      skills: [
+        { name: 'Figma', level: 'advanced' },
+        { name: 'React', level: 'intermediate' },
+        { name: 'Tailwind CSS', level: 'advanced' },
+      ],
+      completedProjects: 4,
+      contributionScore: 85,
+    }
+  });
+
+  await prisma.portfolio.create({
+    data: {
+      userId: 'u_s4',
+      name: 'Bùi Đức Thắng',
+      bio: 'Đam mê phát triển ứng dụng di động đa nền tảng.',
+      major: 'Khoa học Máy tính',
+      year: 4,
+      interests: ['Mobile', 'Flutter', 'React Native'],
+      skills: [
+        { name: 'Flutter', level: 'advanced' },
+        { name: 'Dart', level: 'advanced' },
+        { name: 'Firebase', level: 'intermediate' },
+      ],
+      completedProjects: 5,
+      contributionScore: 89,
+    }
+  });
+
+  await prisma.portfolio.create({
+    data: {
+      userId: 'u_s5',
+      name: 'Phan Mai Linh',
+      bio: 'Kỹ sư Machine Learning tương lai.',
+      major: 'Trí tuệ Nhân tạo',
+      year: 4,
+      interests: ['AI', 'Python', 'Data Science'],
+      skills: [
+        { name: 'Python', level: 'advanced' },
+        { name: 'PyTorch', level: 'intermediate' },
+        { name: 'Scikit-learn', level: 'intermediate' },
+      ],
+      completedProjects: 2,
+      contributionScore: 82,
+    }
+  });
+
   // 3. Create Topics (10 items)
   const topicNames = [
     { title: 'Hệ thống gợi ý lộ trình học tập cá nhân hóa', domain: 'AI/ML', difficulty: 'advanced' },
