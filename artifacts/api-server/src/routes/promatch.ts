@@ -1,5 +1,6 @@
 import { Router, type IRouter, type Request } from "express";
 import multer from "multer";
+import nodemailer from "nodemailer";
 import { prisma } from "@workspace/db";
 import {
   skills,
@@ -34,6 +35,15 @@ import type {
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 20 * 1024 * 1024 },
+});
+
+// Configure Nodemailer transporter
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    user: process.env.SMTP_USER,
+    pass: process.env.SMTP_PASS,
+  },
 });
 
 const router: IRouter = Router();
@@ -102,8 +112,41 @@ router.post("/session/forgot-password", async (req, res) => {
   
   console.log(`[AUTH] Verification code for ${email}: ${code}`);
   
-  // In a real app, send reset email here. For demo, we return the code in response for convenience
-  res.json({ ok: true, message: "Mã xác minh đã được gửi", code: code });
+  // Send REAL email if configured
+  if (process.env.SMTP_USER && process.env.SMTP_PASS) {
+    try {
+      await transporter.sendMail({
+        from: `"PROMATCH Support" <${process.env.SMTP_USER}>`,
+        to: email,
+        subject: "Mã xác minh khôi phục mật khẩu - PROMATCH",
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; border: 1px solid #e1e1e1; border-radius: 10px; overflow: hidden;">
+            <div style="background-color: #0f172a; padding: 20px; text-align: center;">
+              <h1 style="color: #ffffff; margin: 0; letter-spacing: 2px;">PROMATCH</h1>
+            </div>
+            <div style="padding: 30px; line-height: 1.6; color: #334155;">
+              <h2 style="color: #1e293b; text-align: center;">Xác minh khôi phục mật khẩu</h2>
+              <p>Chào bạn,</p>
+              <p>Chúng tôi đã nhận được yêu cầu khôi phục mật khẩu cho tài khoản của bạn. Vui lòng sử dụng mã xác minh dưới đây để hoàn tất quá trình:</p>
+              <div style="background-color: #f1f5f9; padding: 20px; text-align: center; border-radius: 8px; margin: 25px 0;">
+                <span style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #2563eb;">${code}</span>
+              </div>
+              <p style="font-size: 14px; color: #64748b;">Mã này sẽ hết hạn sau 10 phút. Nếu bạn không yêu cầu thay đổi này, hãy bỏ qua email này.</p>
+              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 30px 0;">
+              <p style="font-size: 12px; color: #94a3b8; text-align: center;">© 2026 PROMATCH - Hệ thống quản lý đồ án sinh viên</p>
+            </div>
+          </div>
+        `,
+      });
+      res.json({ ok: true, message: "Mã xác minh đã được gửi về email của bạn" });
+    } catch (error) {
+      console.error("Failed to send email:", error);
+      res.json({ ok: true, message: "Đã tạo mã thành công (Gửi mail thất bại)", code: code });
+    }
+  } else {
+    // Fallback to demo mode if no SMTP config
+    res.json({ ok: true, message: "Mã xác minh đã được gửi (Chế độ Demo)", code: code });
+  }
 });
 
 router.post("/session/verify-code", async (req, res) => {
