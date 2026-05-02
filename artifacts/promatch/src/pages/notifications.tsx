@@ -9,6 +9,7 @@ import { Bell, Calendar, Users, Shield, Info, Check } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { vi } from "date-fns/locale";
 import { Link } from "wouter";
+import { toast } from "sonner";
 
 export default function Notifications() {
   const { data: notifications, isLoading } = useListNotifications();
@@ -50,6 +51,33 @@ export default function Notifications() {
   const unread = notifications?.filter(n => !n.read) || [];
   const read = notifications?.filter(n => n.read) || [];
 
+  const handleInviteResponse = async (notification: any, action: 'accept' | 'reject') => {
+    // Extract projectId from link if possible
+    const projectId = notification.link?.split('/projects/')[1]?.split('?')[0];
+    if (!projectId) {
+      toast.error("Không tìm thấy thông tin dự án trong lời mời này.");
+      return;
+    }
+
+    try {
+      const res = await fetch("/api/teams/respond-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, action, notificationId: notification.id }),
+      });
+      if (res.ok) {
+        toast.success(action === 'accept' ? "Đã tham gia dự án!" : "Đã từ chối lời mời");
+        queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: ["projects"] });
+      } else {
+        const data = await res.json();
+        toast.error(data.error || "Có lỗi xảy ra");
+      }
+    } catch (error) {
+      toast.error("Không thể kết nối đến máy chủ");
+    }
+  };
+
   const NotificationList = ({ items }: { items: typeof notifications }) => {
     if (!items || items.length === 0) {
       return <div className="text-center py-12 text-muted-foreground border border-dashed rounded-lg">Không có thông báo nào.</div>;
@@ -58,31 +86,55 @@ export default function Notifications() {
     return (
       <div className="space-y-3">
         {items.map(notif => (
-          <Card key={notif.id} className={`transition-colors ${notif.read ? 'bg-background' : 'bg-primary/5 border-primary/20'}`}>
+          <Card key={notif.id} className={`transition-all duration-300 ${notif.read ? 'bg-background opacity-80' : 'bg-primary/5 border-primary/20 shadow-sm shadow-primary/5'}`}>
             <CardContent className="p-4 flex gap-4 items-start">
-              <div className="mt-1 bg-background p-2 rounded-full shadow-sm border shrink-0">
+              <div className="mt-1 bg-background p-2 rounded-xl shadow-sm border shrink-0">
                 {getIcon(notif.type)}
               </div>
-              <div className="flex-1 space-y-1">
+              <div className="flex-1 space-y-2">
                 <div className="flex justify-between items-start">
-                  <h4 className={`font-semibold ${notif.read ? '' : 'text-primary'}`}>{notif.title}</h4>
-                  <span className="text-xs text-muted-foreground whitespace-nowrap ml-2">
+                  <h4 className={`font-bold ${notif.read ? 'text-foreground/70' : 'text-primary'}`}>{notif.title}</h4>
+                  <span className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider bg-muted px-2 py-0.5 rounded-full whitespace-nowrap ml-2">
                     {formatDistanceToNow(new Date(notif.createdAt), { locale: vi, addSuffix: true })}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">{notif.body}</p>
-                {notif.link && (
-                  <div className="pt-2">
-                    <Button variant="link" className="h-auto p-0" asChild>
-                      <Link href={notif.link}>Xem chi tiết</Link>
+                <p className="text-sm text-muted-foreground leading-relaxed">{notif.body}</p>
+                
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {notif.type === 'team' && !notif.read && (
+                    <div className="flex items-center gap-2 w-full sm:w-auto">
+                      <Button 
+                        size="sm" 
+                        variant="default" 
+                        className="h-8 font-bold px-4 rounded-lg"
+                        onClick={() => handleInviteResponse(notif, 'accept')}
+                      >
+                        Chấp thuận
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        className="h-8 font-semibold px-4 rounded-lg border-primary/20 hover:bg-destructive/10 hover:text-destructive"
+                        onClick={() => handleInviteResponse(notif, 'reject')}
+                      >
+                        Từ chối
+                      </Button>
+                    </div>
+                  )}
+                  
+                  {notif.link && (
+                    <Button variant="link" className="h-8 p-0 text-xs font-semibold text-primary hover:no-underline flex items-center gap-1" asChild>
+                      <Link href={notif.link}>
+                        Xem chi tiết {notif.type === 'team' ? 'dự án' : ''}
+                      </Link>
                     </Button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
               {!notif.read && (
                 <div className="shrink-0 flex flex-col items-end gap-2">
-                  <div className="w-2 h-2 rounded-full bg-primary" />
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground" onClick={() => handleMarkRead(notif.id)} title="Đánh dấu đã đọc">
+                  <div className="w-2 h-2 rounded-full bg-primary animate-pulse" />
+                  <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg" onClick={() => handleMarkRead(notif.id)} title="Đánh dấu đã đọc">
                     <Check className="w-4 h-4" />
                   </Button>
                 </div>

@@ -358,7 +358,7 @@ router.get("/topics", async (req, res) => {
   if (q) {
     where.OR = [
       { title: { contains: q, mode: 'insensitive' } },
-      { problemDescription: { contains: q, mode: 'insensitive' } },
+      { problemDescription: { contains: q, mode: 'insensitive' } }
     ];
   }
   if (domain && domain !== "all") where.domain = domain;
@@ -370,8 +370,49 @@ router.get("/topics", async (req, res) => {
   else if (sort === "popular") orderBy.popularity = 'desc';
   else if (sort === "score") orderBy.completeness = 'desc';
 
+  const user = await getPrismaUser(req);
   const items = await prisma.topic.findMany({ where, orderBy });
-  res.json({ items, total: items.length });
+  
+  // Mark bookmarked items
+  const bookmarks = user ? await prisma.bookmark.findMany({ where: { userId: user.id } }) : [];
+  const bookmarkIds = new Set(bookmarks.map(b => b.topicId));
+  
+  const itemsWithBookmarks = items.map(item => ({
+    ...item,
+    isBookmarked: bookmarkIds.has(item.id)
+  }));
+
+  res.json({ items: itemsWithBookmarks, total: items.length });
+});
+
+router.post("/topics/:topicId/bookmark", async (req, res) => {
+  const user = await getPrismaUser(req);
+  if (!user) return res.status(401).json({ error: "Not authenticated" });
+  const topicId = req.params.topicId;
+
+  const existing = await prisma.bookmark.findUnique({
+    where: { userId_topicId: { userId: user.id, topicId } }
+  });
+
+  if (existing) {
+    await prisma.bookmark.delete({ where: { id: existing.id } });
+    res.json({ bookmarked: false });
+  } else {
+    await prisma.bookmark.create({ data: { userId: user.id, topicId } });
+    res.json({ bookmarked: true });
+  }
+});
+
+router.get("/topics/bookmarks", async (req, res) => {
+  const user = await getPrismaUser(req);
+  if (!user) return res.status(401).json({ error: "Not authenticated" });
+
+  const bookmarks = await prisma.bookmark.findMany({
+    where: { userId: user.id },
+    include: { topic: true }
+  });
+
+  res.json(bookmarks.map(b => ({ ...b.topic, isBookmarked: true })));
 });
 
 router.post("/topics", async (req, res) => {
@@ -408,6 +449,10 @@ router.get("/topics/recommend", async (req, res) => {
 
   const items = await prisma.topic.findMany({ where, orderBy: { popularity: 'desc' }, take: 24 });
 
+  // Get user bookmarks
+  const bookmarks = user ? await prisma.bookmark.findMany({ where: { userId: user.id } }) : [];
+  const bookmarkIds = new Set(bookmarks.map(b => b.topicId));
+
   // Get user skills and interests from portfolio
   const portfolio = user ? await prisma.portfolio.findUnique({ where: { userId: user.id } }) : null;
   const userSkills = new Set<string>((portfolio?.skills as any[] || []).map((s: any) => s.name?.toLowerCase() || ''));
@@ -423,7 +468,10 @@ router.get("/topics/recommend", async (req, res) => {
     const pqs = Math.min(1, (t.completeness as number) * 0.7 + Math.min(t.popularity / 200, 1) * 0.3);
     const hybrid = 0.4 * sms + 0.35 * ias + 0.25 * pqs;
     return {
-      topic: t,
+      topic: {
+        ...t,
+        isBookmarked: bookmarkIds.has(t.id)
+      },
       hybridScore: Math.round(hybrid * 1000) / 1000,
       skillMatchScore: Math.round(sms * 1000) / 1000,
       interestAlignmentScore: Math.round(ias * 1000) / 1000,
@@ -665,9 +713,9 @@ router.get("/teams/recommend", async (req, res) => {
       
       const shared = [...cSkills].filter(s => mySkills.has(s));
       const complementary = [...cSkills].filter(s => !mySkills.has(s));
-      const fillsGap = topic ? [...required].filter(s => !mySkills.has(s) && cSkills.has(s)).length : 0;
+      const missingSkills = topic ? [...required].filter(s => !mySkills.has(s) && cSkills.has(s)) : [];
       
-      const score = Math.min(1, complementary.length / 5) * 0.5 + (fillsGap > 0 ? 0.4 : 0.1) + Math.min(1, cp.contributionScore / 100) * 0.1;
+      const score = Math.min(1, complementary.length / 5) * 0.4 + (missingSkills.length > 0 ? 0.5 : 0.1) + Math.min(1, cp.contributionScore / 100) * 0.1;
       
       const suggestedRole = cSkillsArr.some((s: any) => /figma|ux|ui/i.test(s.name || ''))
         ? 'UI/UX Designer'
@@ -679,15 +727,24 @@ router.get("/teams/recommend", async (req, res) => {
               ? 'ML Engineer'
               : 'Full-stack Developer';
               
+      let aiInsight = "";
+      if (topic) {
+        if (missingSkills.length > 0) {
+          aiInsight = `Thành viên này sở hữu ${missingSkills.length} kỹ năng then chốt đang thiếu trong nhóm: ${missingSkills.slice(0, 3).join(', ')}. Đây là mảnh ghép hoàn hảo để hoàn thiện yêu cầu của đề tài.`;
+        } else {
+          aiInsight = `Có sự tương đồng cao về kỹ năng cơ bản. Thành viên này có thể hỗ trợ tốt ở vai trò ${suggestedRole} và mang lại kinh nghiệm từ ${cp.completedProjects} dự án đã thực hiện.`;
+        }
+      } else {
+        aiInsight = `Bổ sung ${complementary.length} kỹ năng mới cho mạng lưới của bạn. Phù hợp để hợp tác trong các dự án về ${cp.major || 'CNTT'}.`;
+      }
+
       return {
         user: { id: c.id, name: c.name, role: c.role, organization: c.organization, avatarUrl: c.avatarUrl },
         complementarityScore: Math.round(score * 100) / 100,
         sharedSkills: shared,
         complementarySkills: complementary,
         suggestedRole,
-        gapAnalysis: fillsGap > 0
-          ? `Lấp được ${fillsGap} kỹ năng còn thiếu cho đề tài này`
-          : `Bổ sung ${complementary.length} kỹ năng mới cho nhóm`,
+        gapAnalysis: aiInsight,
       };
     });
 
@@ -1013,12 +1070,13 @@ router.post("/notifications/read-all", async (req, res) => {
 // Push notification: team invitation
 router.post("/teams/invite", async (req, res) => {
   const body = req.body || {};
-  const targetUserId = body.userId; // This should be the recipient's ID
+  const targetUserId = body.userId;
   if (!targetUserId) return res.status(400).json({ error: "Target userId is required" });
 
   const topicTitle = String(body.topicTitle || "đề tài").slice(0, 200);
   const inviterName = String(body.inviterName || "Một sinh viên").slice(0, 100);
   const message = body.message ? String(body.message).slice(0, 200) : null;
+  const projectId = body.projectId;
   
   const n = await pushNotification(targetUserId, {
     title: "Lời mời tham gia nhóm",
@@ -1026,9 +1084,68 @@ router.post("/teams/invite", async (req, res) => {
       ? `${inviterName} mời bạn tham gia nhóm cho đề tài "${topicTitle}". Lời nhắn: ${message}`
       : `${inviterName} mời bạn tham gia nhóm cho đề tài "${topicTitle}".`,
     type: "team",
-    link: "/teams",
+    link: projectId ? `/projects/${projectId}?invite=true` : "/teams",
   });
   res.status(201).json(n);
+});
+
+router.post("/teams/respond-invite", async (req, res) => {
+  const user = await getPrismaUser(req);
+  if (!user) return res.status(401).json({ error: "Not authenticated" });
+
+  const { projectId, action, notificationId } = req.body as { projectId: string, action: 'accept' | 'reject', notificationId?: string };
+  if (!projectId || !action) return res.status(400).json({ error: "Missing data" });
+
+  const project = await prisma.project.findUnique({ where: { id: projectId } });
+  if (!project) return res.status(404).json({ error: "Project not found" });
+
+  const projectMembers = await prisma.projectMember.findMany({ where: { projectId } });
+  const inviter = projectMembers[0];
+
+  if (action === 'accept') {
+    // Check if already a member
+    const existing = await prisma.projectMember.findFirst({ where: { projectId, userId: user.id } });
+    if (!existing) {
+      await prisma.projectMember.create({
+        data: {
+          projectId,
+          userId: user.id,
+          name: user.name,
+          avatarUrl: user.avatarUrl,
+          role: "Thành viên",
+          contributionPct: 0,
+        }
+      });
+
+      await prisma.project.update({
+        where: { id: projectId },
+        data: { memberCount: { increment: 1 } }
+      });
+
+      if (inviter) {
+        await pushNotification(inviter.userId, {
+          title: "Lời mời đã được chấp nhận",
+          body: `${user.name} đã đồng ý tham gia dự án "${project.name}".`,
+          type: "team",
+          link: `/project-detail/${projectId}`,
+        });
+      }
+    }
+  } else {
+    if (inviter) {
+      await pushNotification(inviter.userId, {
+        title: "Lời mời bị từ chối",
+        body: `${user.name} đã từ chối tham gia dự án "${project.name}".`,
+        type: "team",
+      });
+    }
+  }
+
+  if (notificationId) {
+    await prisma.notification.update({ where: { id: notificationId }, data: { read: true } });
+  }
+
+  res.json({ ok: true });
 });
 
 // Push notification: project status update

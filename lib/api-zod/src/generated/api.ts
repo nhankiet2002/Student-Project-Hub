@@ -132,9 +132,7 @@ export const GetPortfolioParams = zod.object({
 
 export const GetPortfolioResponse = zod.object({
   userId: zod.string(),
-  role: zod
-    .enum(["student", "instructor", "enterprise", "admin"])
-    .optional(),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]).optional(),
   name: zod.string(),
   avatarUrl: zod.string().nullish(),
   bio: zod.string(),
@@ -299,9 +297,7 @@ export const UpdatePortfolioBody = zod.object({
 
 export const UpdatePortfolioResponse = zod.object({
   userId: zod.string(),
-  role: zod
-    .enum(["student", "instructor", "enterprise", "admin"])
-    .optional(),
+  role: zod.enum(["student", "instructor", "enterprise", "admin"]).optional(),
   name: zod.string(),
   avatarUrl: zod.string().nullish(),
   bio: zod.string(),
@@ -425,6 +421,7 @@ export const ListTopicsResponse = zod.object({
       popularity: zod.number().optional(),
       createdAt: zod.string(),
       completeness: zod.number().optional(),
+      isBookmarked: zod.boolean().optional(),
     }),
   ),
   total: zod.number(),
@@ -471,7 +468,51 @@ export const GetTopicResponse = zod.object({
   popularity: zod.number().optional(),
   createdAt: zod.string(),
   completeness: zod.number().optional(),
+  isBookmarked: zod.boolean().optional(),
 });
+
+/**
+ * @summary Toggle bookmark for a topic
+ */
+export const ToggleBookmarkParams = zod.object({
+  topicId: zod.coerce.string(),
+});
+
+export const ToggleBookmarkResponse = zod.object({
+  bookmarked: zod.boolean(),
+});
+
+/**
+ * @summary List all bookmarked topics for the current user
+ */
+export const ListBookmarkedTopicsResponseItem = zod.object({
+  id: zod.string(),
+  title: zod.string(),
+  problemDescription: zod.string(),
+  objectives: zod.array(zod.string()),
+  technologies: zod.array(zod.string()),
+  domain: zod.string(),
+  difficulty: zod.enum(["beginner", "intermediate", "advanced"]),
+  source: zod.enum([
+    "instructor",
+    "enterprise",
+    "student",
+    "ai",
+    "knowledge",
+    "trend",
+  ]),
+  sourceLabel: zod.string().nullish(),
+  requiredSkills: zod.array(zod.string()),
+  teamSize: zod.number(),
+  feasibility: zod.string().nullish(),
+  popularity: zod.number().optional(),
+  createdAt: zod.string(),
+  completeness: zod.number().optional(),
+  isBookmarked: zod.boolean().optional(),
+});
+export const ListBookmarkedTopicsResponse = zod.array(
+  ListBookmarkedTopicsResponseItem,
+);
 
 /**
  * @summary Personalized topic recommendations (Hybrid Score)
@@ -505,6 +546,7 @@ export const RecommendTopicsResponseItem = zod.object({
     popularity: zod.number().optional(),
     createdAt: zod.string(),
     completeness: zod.number().optional(),
+    isBookmarked: zod.boolean().optional(),
   }),
   hybridScore: zod.number(),
   skillMatchScore: zod.number(),
@@ -549,6 +591,7 @@ export const AiGenerateTopicsResponse = zod.object({
       popularity: zod.number().optional(),
       createdAt: zod.string(),
       completeness: zod.number().optional(),
+      isBookmarked: zod.boolean().optional(),
     }),
   ),
   remainingQuota: zod.number(),
@@ -979,7 +1022,7 @@ export const UploadTaskAttachmentParams = zod.object({
 });
 
 export const UploadTaskAttachmentBody = zod.object({
-  file: typeof File !== 'undefined' ? zod.instanceof(File) : zod.any(),
+  file: zod.instanceof(File),
 });
 
 export const DeleteTaskAttachmentParams = zod.object({

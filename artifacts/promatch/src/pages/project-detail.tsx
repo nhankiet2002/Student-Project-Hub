@@ -1,6 +1,6 @@
 import { useState } from "react";
-import { useGetProject, useListTasks, useCreateTask, useUpdateTask, useGetContributions, useUpdateProjectStatus, getListTasksQueryKey, getGetContributionsQueryKey , getGetProjectQueryKey, getListNotificationsQueryKey, getListProjectsQueryKey } from "@workspace/api-client-react";
-import { useParams } from "wouter";
+import { useGetProject, useListTasks, useCreateTask, useUpdateTask, useGetContributions, useUpdateProjectStatus, getListTasksQueryKey, getGetContributionsQueryKey , getGetProjectQueryKey, getListNotificationsQueryKey, getListProjectsQueryKey, useGetSession, useToggleBookmark } from "@workspace/api-client-react";
+import { useParams, useSearch } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -98,6 +98,11 @@ export default function ProjectDetail() {
     updateTaskMutation.mutate({ taskId, data: { status } });
   };
 
+  const { data: session } = useGetSession();
+  const searchString = useSearch();
+  const searchParams = new URLSearchParams(searchString);
+  const isInvite = searchParams.get("invite") === "true";
+  
   if (projectLoading) {
     return <div className="space-y-6"><Skeleton className="h-32 w-full" /><Skeleton className="h-96 w-full" /></div>;
   }
@@ -105,6 +110,25 @@ export default function ProjectDetail() {
   if (!projectData) return <div>Không tìm thấy dự án</div>;
 
   const { project, members, milestones, description, recentActivity } = projectData;
+  const isMember = session?.id && members.some(m => m.userId === session.id);
+
+  const handleInviteResponse = async (action: 'accept' | 'reject') => {
+    try {
+      const res = await fetch("/api/teams/respond-invite", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ projectId, action }),
+      });
+      if (res.ok) {
+        toast.success(action === 'accept' ? "Đã tham gia dự án!" : "Đã từ chối lời mời");
+        queryClient.invalidateQueries({ queryKey: getGetProjectQueryKey(projectId || "") });
+        queryClient.invalidateQueries({ queryKey: getListProjectsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getListNotificationsQueryKey() });
+      }
+    } catch (error) {
+      toast.error("Có lỗi xảy ra, vui lòng thử lại");
+    }
+  };
 
   const taskColumns = [
     { id: "todo", title: "Cần làm" },
@@ -115,6 +139,28 @@ export default function ProjectDetail() {
 
   return (
     <div className="space-y-6">
+      {isInvite && !isMember && (
+        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-6 flex flex-col md:flex-row items-center justify-between gap-4 animate-in fade-in slide-in-from-top-4 duration-500">
+          <div className="flex items-center gap-4">
+            <div className="bg-primary/20 p-3 rounded-full">
+              <Users className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-bold text-lg text-primary">Bạn có một lời mời tham gia nhóm!</h3>
+              <p className="text-sm text-muted-foreground">Hãy xem qua chi tiết dự án bên dưới trước khi quyết định.</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 w-full md:w-auto">
+            <Button variant="outline" className="flex-1 md:flex-none border-primary/20 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30" onClick={() => handleInviteResponse('reject')}>
+              Từ chối
+            </Button>
+            <Button className="flex-1 md:flex-none font-bold" onClick={() => handleInviteResponse('accept')}>
+              Chấp thuận tham gia
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row gap-4 justify-between items-start md:items-end">
         <div>
           <div className="flex items-center gap-2 mb-2 flex-wrap">

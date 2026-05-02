@@ -239,6 +239,7 @@ export interface Topic {
   popularity?: number;
   createdAt: string;
   completeness?: number;
+  isBookmarked?: boolean;
 }
 
 export type TopicCreateDifficulty =
@@ -710,6 +711,10 @@ export const ListTopicsSort = {
 export type ListTopics200 = {
   items: Topic[];
   total: number;
+};
+
+export type ToggleBookmark200 = {
+  bookmarked: boolean;
 };
 
 export type RecommendTopicsParams = {

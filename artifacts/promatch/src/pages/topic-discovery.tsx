@@ -4,11 +4,15 @@ import {
   ListTopicsParams, 
   useAiGenerateTopics, 
   useCreateTopic, 
-  getListTopicsQueryKey,
+  useGetPortfolio,
+  useListBookmarkedTopics,
+  useToggleBookmark,
   useGetSession,
-  useGetPortfolio
+  getListTopicsQueryKey,
+  getListBookmarkedTopicsQueryKey,
+  getRecommendTopicsQueryKey
 } from "@workspace/api-client-react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Link } from "wouter";
 import { Input } from "@/components/ui/input";
@@ -20,7 +24,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { Search, Sparkles, Loader2, Save, Check, Filter } from "lucide-react";
+import { Search, Sparkles, Loader2, Save, Check, Filter, Bookmark, Heart } from "lucide-react";
 
 export default function TopicDiscovery() {
   const { data: session } = useGetSession();
@@ -30,6 +34,7 @@ export default function TopicDiscovery() {
   const [activeTab, setActiveTab] = useState("all");
   const [params, setParams] = useState<ListTopicsParams>({ sort: "recent" });
   const { data: topicsData, isLoading: isLoadingTopics } = useListTopics(params);
+  const { data: bookmarkedTopics, isLoading: isLoadingBookmarks } = useListBookmarkedTopics();
 
   // AI State
   const [interestsStr, setInterestsStr] = useState("");
@@ -61,18 +66,60 @@ export default function TopicDiscovery() {
     }
   });
 
-  const createTopicMutation = useCreateTopic({
+  const toggleBookmarkMutation = useToggleBookmark({
     mutation: {
-      onSuccess: (data) => {
-        queryClient.invalidateQueries({ queryKey: getListTopicsQueryKey() });
-        toast.success("Đã lưu đề tài thành công!");
-        setSavedTopics([...savedTopics, data.id]);
+      onMutate: async ({ topicId }) => {
+        // Cancel any outgoing refetches to avoid overwriting our optimistic update
+        await queryClient.cancelQueries({ queryKey: ['/api/topics'] });
+        await queryClient.cancelQueries({ queryKey: getListBookmarkedTopicsQueryKey() });
+        await queryClient.cancelQueries({ queryKey: getRecommendTopicsQueryKey() });
+
+        // Snapshot the previous values
+        const previousTopics = queryClient.getQueryData(['/api/topics']);
+        const previousBookmarks = queryClient.getQueryData(getListBookmarkedTopicsQueryKey());
+        const previousRecommend = queryClient.getQueryData(getRecommendTopicsQueryKey());
+
+        // Optimistically update the cache
+        queryClient.setQueriesData({ queryKey: ['/api/topics'] }, (old: any) => {
+          if (!old?.items) return old;
+          return {
+            ...old,
+            items: old.items.map((t: any) => 
+              t.id === topicId ? { ...t, isBookmarked: !t.isBookmarked } : t
+            )
+          };
+        });
+
+        queryClient.setQueryData(getRecommendTopicsQueryKey(), (old: any) => {
+          if (!Array.isArray(old)) return old;
+          return old.map((t: any) => 
+            t.id === topicId ? { ...t, isBookmarked: !t.isBookmarked } : t
+          );
+        });
+
+        return { previousTopics, previousBookmarks, previousRecommend };
       },
-      onError: () => {
-        toast.error("Lỗi khi lưu đề tài.");
+      onError: (err, variables, context) => {
+        // Rollback if error
+        if (context?.previousTopics) queryClient.setQueryData(['/api/topics'], context.previousTopics);
+        if (context?.previousBookmarks) queryClient.setQueryData(getListBookmarkedTopicsQueryKey(), context.previousBookmarks);
+        if (context?.previousRecommend) queryClient.setQueryData(getRecommendTopicsQueryKey(), context.previousRecommend);
+        toast.error("Không thể cập nhật trạng thái lưu.");
+      },
+      onSuccess: () => {
+        // Final sync with server
+        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+        queryClient.invalidateQueries({ queryKey: getListBookmarkedTopicsQueryKey() });
+        queryClient.invalidateQueries({ queryKey: getRecommendTopicsQueryKey() });
       }
     }
   });
+
+  const handleToggleBookmark = (e: React.MouseEvent, topicId: string) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleBookmarkMutation.mutate({ topicId });
+  };
 
   const handleGenerate = () => {
     if (!domain) {
@@ -115,11 +162,15 @@ export default function TopicDiscovery() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-8">
+        <TabsList className="grid w-full grid-cols-3 max-w-[500px] mb-8">
           <TabsTrigger value="all">Tất cả đề tài</TabsTrigger>
           <TabsTrigger value="ai" className="flex items-center gap-2">
             <Sparkles className="w-4 h-4" />
             Gợi ý AI
+          </TabsTrigger>
+          <TabsTrigger value="bookmarks" className="flex items-center gap-2">
+            <Heart className="w-4 h-4" />
+            Đã lưu
           </TabsTrigger>
         </TabsList>
 
@@ -193,62 +244,72 @@ export default function TopicDiscovery() {
                 <p className="text-muted-foreground">Hãy thử thay đổi từ khóa hoặc bộ lọc của bạn.</p>
               </div>
             ) : (
-              topicsData?.items?.map((topic) => (
-                <Link key={topic.id} href={`/topics/${topic.id}`}>
-                  <Card className="h-full flex flex-col hover:shadow-lg transition-all border-border/50 group cursor-pointer relative overflow-hidden">
-                    <CardHeader className="pb-3">
-                      <div className="flex justify-between items-start gap-2 mb-3">
-                        <Badge variant="outline" className="bg-background/50 font-medium">
-                          {topic.sourceLabel || topic.source}
-                        </Badge>
-                        <Badge 
-                          className={
-                            topic.difficulty === 'advanced' ? 'bg-red-500/10 text-red-600 border-red-200' : 
-                            topic.difficulty === 'intermediate' ? 'bg-blue-500/10 text-blue-600 border-blue-200' : 
-                            'bg-slate-500/10 text-slate-600 border-slate-200'
-                          }
-                        >
-                          {topic.difficulty === 'advanced' ? 'Nâng cao' : topic.difficulty === 'intermediate' ? 'Trung bình' : 'Cơ bản'}
-                        </Badge>
-                      </div>
-                      <CardTitle className="text-xl leading-tight group-hover:text-primary transition-colors line-clamp-2">
-                        {topic.title}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent className="flex-1">
-                      <div className="flex flex-wrap gap-1.5 mb-4">
-                        <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">{topic.domain}</Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground line-clamp-3 mb-6">
-                        {topic.problemDescription || "Không có mô tả chi tiết cho đề tài này."}
-                      </p>
-                      
-                      {topic.completeness !== undefined && (
-                        <div className="space-y-1.5 mt-auto">
-                          <div className="flex justify-between text-[11px] font-medium">
-                            <span className="text-muted-foreground uppercase tracking-tight">Độ hoàn thiện</span>
-                            <span className="text-primary">{topic.completeness}%</span>
-                          </div>
-                          <Progress value={topic.completeness} className="h-1.5" />
+               topicsData?.items?.map((topic) => (
+                <div key={topic.id} className="relative group">
+                  <Link href={`/topics/${topic.id}`}>
+                    <Card className="h-full flex flex-col hover:shadow-lg transition-all border-border/50 group cursor-pointer relative overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start gap-2 mb-3">
+                          <Badge variant="outline" className="bg-background/50 font-medium">
+                            {topic.sourceLabel || topic.source}
+                          </Badge>
+                          <Badge 
+                            className={
+                              topic.difficulty === 'advanced' ? 'bg-red-500/10 text-red-600 border-red-200' : 
+                              topic.difficulty === 'intermediate' ? 'bg-blue-500/10 text-blue-600 border-blue-200' : 
+                              'bg-slate-500/10 text-slate-600 border-slate-200'
+                            }
+                          >
+                            {topic.difficulty === 'advanced' ? 'Nâng cao' : topic.difficulty === 'intermediate' ? 'Trung bình' : 'Cơ bản'}
+                          </Badge>
                         </div>
-                      )}
-                    </CardContent>
-                    <CardFooter className="pt-4 border-t border-border/40 bg-muted/10">
-                      <div className="flex flex-wrap gap-1">
-                        {topic.requiredSkills?.slice(0, 3).map((skill, i) => (
-                          <span key={i} className="text-[10px] bg-background border border-border px-1.5 py-0.5 rounded text-muted-foreground">
-                            {skill}
-                          </span>
-                        ))}
-                        {(topic.requiredSkills?.length || 0) > 3 && (
-                          <span className="text-[10px] bg-background border border-border px-1.5 py-0.5 rounded text-muted-foreground">
-                            +{(topic.requiredSkills?.length || 0) - 3}
-                          </span>
+                        <CardTitle className="text-xl leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                          {topic.title}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex-1">
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">{topic.domain}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-3 mb-6">
+                          {topic.problemDescription || "Không có mô tả chi tiết cho đề tài này."}
+                        </p>
+                        
+                        {topic.completeness !== undefined && (
+                          <div className="space-y-1.5 mt-auto">
+                            <div className="flex justify-between text-[11px] font-medium">
+                              <span className="text-muted-foreground uppercase tracking-tight">Độ hoàn thiện</span>
+                              <span className="text-primary">{topic.completeness}%</span>
+                            </div>
+                            <Progress value={topic.completeness} className="h-1.5" />
+                          </div>
                         )}
-                      </div>
-                    </CardFooter>
-                  </Card>
-                </Link>
+                      </CardContent>
+                      <CardFooter className="pt-4 border-t border-border/40 bg-muted/10">
+                        <div className="flex flex-wrap gap-1">
+                          {topic.requiredSkills?.slice(0, 3).map((skill, i) => (
+                            <span key={i} className="text-[10px] bg-background border border-border px-1.5 py-0.5 rounded text-muted-foreground">
+                              {skill}
+                            </span>
+                          ))}
+                          {(topic.requiredSkills?.length || 0) > 3 && (
+                            <span className="text-[10px] bg-background border border-border px-1.5 py-0.5 rounded text-muted-foreground">
+                              +{(topic.requiredSkills?.length || 0) - 3}
+                            </span>
+                          )}
+                        </div>
+                      </CardFooter>
+                    </Card>
+                  </Link>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className={`absolute top-4 right-4 z-10 rounded-full h-9 w-9 bg-background/50 backdrop-blur-sm border border-border/50 shadow-sm transition-all hover:scale-110 active:scale-95 ${topic.isBookmarked ? 'text-rose-500 bg-rose-50 border-rose-100' : 'text-muted-foreground'}`}
+                    onClick={(e) => handleToggleBookmark(e, topic.id)}
+                  >
+                    <Heart className={`w-5 h-5 ${topic.isBookmarked ? 'fill-current' : ''}`} />
+                  </Button>
+                </div>
               ))
             )}
           </div>
@@ -404,6 +465,66 @@ export default function TopicDiscovery() {
                   Hãy nhập thông tin phía trên và nhấn nút "Sinh đề tài" để khám phá các ý tưởng mới từ AI.
                 </p>
               </div>
+            )}
+          </div>
+        </TabsContent>
+
+        <TabsContent value="bookmarks" className="space-y-6">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {isLoadingBookmarks ? (
+              Array(3).fill(0).map((_, i) => (
+                <Skeleton key={i} className="h-64 w-full rounded-2xl" />
+              ))
+            ) : !bookmarkedTopics || bookmarkedTopics.length === 0 ? (
+              <div className="col-span-full py-20 text-center border-2 border-dashed rounded-2xl bg-muted/20">
+                <Heart className="w-12 h-12 mx-auto text-rose-500 opacity-20 mb-4" />
+                <h3 className="text-lg font-semibold">Chưa có đề tài nào được lưu</h3>
+                <p className="text-muted-foreground">Bấm vào biểu tượng trái tim trên các đề tài để lưu lại.</p>
+              </div>
+            ) : (
+              bookmarkedTopics.map((topic) => (
+                <div key={topic.id} className="relative group">
+                  <Link href={`/topics/${topic.id}`}>
+                    <Card className="h-full flex flex-col hover:shadow-lg transition-all border-border/50 group cursor-pointer relative overflow-hidden">
+                      <CardHeader className="pb-3">
+                        <div className="flex justify-between items-start gap-2 mb-3">
+                          <Badge variant="outline" className="bg-background/50 font-medium">
+                            {topic.sourceLabel || topic.source}
+                          </Badge>
+                          <Badge 
+                            className={
+                              topic.difficulty === 'advanced' ? 'bg-red-500/10 text-red-600 border-red-200' : 
+                              topic.difficulty === 'intermediate' ? 'bg-blue-500/10 text-blue-600 border-blue-200' : 
+                              'bg-slate-500/10 text-slate-600 border-slate-200'
+                            }
+                          >
+                            {topic.difficulty === 'advanced' ? 'Nâng cao' : topic.difficulty === 'intermediate' ? 'Trung bình' : 'Cơ bản'}
+                          </Badge>
+                        </div>
+                        <CardTitle className="text-xl leading-tight group-hover:text-primary transition-colors line-clamp-2">
+                          {topic.title}
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="flex-1">
+                        <div className="flex flex-wrap gap-1.5 mb-4">
+                          <Badge variant="secondary" className="text-[10px] uppercase tracking-wider">{topic.domain}</Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-3 mb-6">
+                          {topic.problemDescription}
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="absolute top-4 right-4 z-10 rounded-full h-9 w-9 bg-rose-50 text-rose-500 border border-rose-100 shadow-sm hover:scale-110 active:scale-95"
+                    onClick={(e) => handleToggleBookmark(e, topic.id)}
+                  >
+                    <Heart className="w-5 h-5 fill-current" />
+                  </Button>
+                </div>
+              ))
             )}
           </div>
         </TabsContent>

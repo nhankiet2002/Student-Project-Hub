@@ -21,6 +21,7 @@ model User {
   Portfolio    Portfolio?
   Projects     ProjectMember[]
   Applications Application[]
+  Bookmarks    Bookmark[]
 }
 
 model Portfolio {
@@ -63,8 +64,22 @@ model Topic {
   popularity         Int      @default(0)
   completeness       Int      @default(0)
   createdAt          DateTime @default(now()) @map("created_at")
+  Bookmarks          Bookmark[]
 
   @@map("topics")
+}
+
+model Bookmark {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  topicId   String   @map("topic_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topic Topic @relation(fields: [topicId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, topicId])
+  @@map("bookmarks")
 }
 
 model Project {

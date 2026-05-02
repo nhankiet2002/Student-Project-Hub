@@ -348,6 +348,42 @@ paths:
               schema:
                 $ref: "#/components/schemas/Topic"
 
+  /topics/{topicId}/bookmark:
+    post:
+      operationId: toggleBookmark
+      tags: [topics]
+      summary: Toggle bookmark for a topic
+      parameters:
+        - name: topicId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [bookmarked]
+                properties:
+                  bookmarked: { type: boolean }
+
+  /topics/bookmarks:
+    get:
+      operationId: listBookmarkedTopics
+      tags: [topics]
+      summary: List all bookmarked topics for the current user
+      responses:
+        "200":
+          description: List of bookmarked topics
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Topic"
+
   /topics/recommend:
     get:
       operationId: recommendTopics
@@ -1350,6 +1386,7 @@ components:
         popularity: { type: integer }
         createdAt: { type: string }
         completeness: { type: number }
+        isBookmarked: { type: boolean }
 
     TopicCreate:
       type: object

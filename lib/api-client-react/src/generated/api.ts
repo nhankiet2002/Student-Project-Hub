@@ -65,6 +65,7 @@ import type {
   TaskUpdate,
   TeamInvitation,
   TeammateRecommendation,
+  ToggleBookmark200,
   Topic,
   TopicCreate,
   TopicRecommendation,
@@ -1239,6 +1240,165 @@ export function useGetTopic<
   },
 ): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
   const queryOptions = getGetTopicQueryOptions(topicId, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Toggle bookmark for a topic
+ */
+export const getToggleBookmarkUrl = (topicId: string) => {
+  return `/api/topics/${topicId}/bookmark`;
+};
+
+export const toggleBookmark = async (
+  topicId: string,
+  options?: RequestInit,
+): Promise<ToggleBookmark200> => {
+  return customFetch<ToggleBookmark200>(getToggleBookmarkUrl(topicId), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getToggleBookmarkMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof toggleBookmark>>,
+    TError,
+    { topicId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof toggleBookmark>>,
+  TError,
+  { topicId: string },
+  TContext
+> => {
+  const mutationKey = ["toggleBookmark"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof toggleBookmark>>,
+    { topicId: string }
+  > = (props) => {
+    const { topicId } = props ?? {};
+
+    return toggleBookmark(topicId, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ToggleBookmarkMutationResult = NonNullable<
+  Awaited<ReturnType<typeof toggleBookmark>>
+>;
+
+export type ToggleBookmarkMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Toggle bookmark for a topic
+ */
+export const useToggleBookmark = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof toggleBookmark>>,
+    TError,
+    { topicId: string },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof toggleBookmark>>,
+  TError,
+  { topicId: string },
+  TContext
+> => {
+  return useMutation(getToggleBookmarkMutationOptions(options));
+};
+
+/**
+ * @summary List all bookmarked topics for the current user
+ */
+export const getListBookmarkedTopicsUrl = () => {
+  return `/api/topics/bookmarks`;
+};
+
+export const listBookmarkedTopics = async (
+  options?: RequestInit,
+): Promise<Topic[]> => {
+  return customFetch<Topic[]>(getListBookmarkedTopicsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListBookmarkedTopicsQueryKey = () => {
+  return [`/api/topics/bookmarks`] as const;
+};
+
+export const getListBookmarkedTopicsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listBookmarkedTopics>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBookmarkedTopics>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListBookmarkedTopicsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listBookmarkedTopics>>
+  > = ({ signal }) => listBookmarkedTopics({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listBookmarkedTopics>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListBookmarkedTopicsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listBookmarkedTopics>>
+>;
+export type ListBookmarkedTopicsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all bookmarked topics for the current user
+ */
+
+export function useListBookmarkedTopics<
+  TData = Awaited<ReturnType<typeof listBookmarkedTopics>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listBookmarkedTopics>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListBookmarkedTopicsQueryOptions(options);
 
   const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
     queryKey: QueryKey;
