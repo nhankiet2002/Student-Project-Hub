@@ -544,7 +544,7 @@ router.post("/topics/ai-generate", (req, res) => {
     domain,
     difficulty: i % 2 === 0 ? "intermediate" : "advanced",
     source: "ai",
-    sourceLabel: "Sinh bởi AI - Claude/GPT-4o",
+    sourceLabel: "Sinh bởi AI - Gemini 3 Flash Preview",
     requiredSkills: (portfolio?.skills || []).slice(0, 4).map((s) => s.skillId),
     teamSize: 3 + (i % 2),
     feasibility: "Khả thi - phù hợp với năng lực hiện tại",

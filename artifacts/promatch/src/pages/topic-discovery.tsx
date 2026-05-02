@@ -115,6 +115,18 @@ export default function TopicDiscovery() {
     }
   });
 
+  const createTopicMutation = useCreateTopic({
+    mutation: {
+      onSuccess: () => {
+        toast.success("Đã lưu đề tài vào hệ thống.");
+        queryClient.invalidateQueries({ queryKey: ['/api/topics'] });
+      },
+      onError: () => {
+        toast.error("Không thể lưu đề tài.");
+      }
+    }
+  });
+
   const handleToggleBookmark = (e: React.MouseEvent, topicId: string) => {
     e.preventDefault();
     e.stopPropagation();
@@ -395,7 +407,6 @@ export default function TopicDiscovery() {
               <div className="space-y-6 pt-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <div className="flex items-center justify-between">
                   <h2 className="text-2xl font-bold">Kết quả gợi ý ({generateMutation.data.items.length})</h2>
-                  <Badge variant="secondary">Gemini 1.5 Pro</Badge>
                 </div>
                 
                 <div className="grid gap-6">

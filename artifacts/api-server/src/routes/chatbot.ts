@@ -97,7 +97,7 @@ router.post("/chatbot/message", async (req, res) => {
     const systemPrompt = buildSystemPrompt(req.session.userId);
 
     const stream = await openai.chat.completions.create({
-      model: "gpt-5.4",
+      model: "gemini-3-flash-preview",
       max_completion_tokens: 1500,
       messages: [
         { role: "system", content: systemPrompt },
