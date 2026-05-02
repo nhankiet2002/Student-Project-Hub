@@ -191,8 +191,33 @@ router.get("/portfolios/:userId", async (req, res) => {
   const userId = req.params.userId;
   const p = await prisma.portfolio.findUnique({ where: { userId }, include: { user: true } });
   if (!p) { res.status(404).json({ error: "Not found" }); return; }
-  res.json({ ...p, role: p.user.role });
+
+  // Fetch real projects that are completed
+  const projectMemberships = await prisma.projectMember.findMany({
+    where: { userId, project: { status: 'completed' } },
+    include: { project: true }
+  });
+
+  const completedDbProjects = projectMemberships.map(pm => ({
+    id: pm.project.id,
+    title: pm.project.name,
+    role: pm.role,
+    year: parseInt(pm.project.dueDate.split('-')[0]) || new Date().getFullYear(),
+    summary: pm.project.description || "",
+    contributionPct: pm.contributionPct,
+    isRealProject: true
+  }));
+
+  const pastProjects = (p.pastProjects as any[] || []);
+  const allCompletedProjects = [...completedDbProjects, ...pastProjects];
+
+  res.json({ 
+    ...p, 
+    role: p.user.role,
+    allCompletedProjects 
+  });
 });
+
 
 router.put("/portfolios/:userId", async (req, res) => {
   const userId = req.params.userId;

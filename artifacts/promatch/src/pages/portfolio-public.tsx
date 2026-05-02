@@ -90,6 +90,42 @@ export default function PortfolioPublic() {
               </div>
             </CardContent>
           </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Dự án đã tham gia</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {(!portfolio.allCompletedProjects || portfolio.allCompletedProjects.length === 0) ? (
+                <p className="text-muted-foreground text-sm italic">Chưa có dự án hoàn thành nào được ghi nhận.</p>
+              ) : (
+                <div className="grid gap-4">
+                  {(portfolio.allCompletedProjects as any[]).map((project, idx) => (
+                    <div key={project.id || idx} className="p-4 rounded-lg border border-border bg-card hover:bg-muted/30 transition-colors">
+                      <div className="flex justify-between items-start mb-2">
+                        <div>
+                          <h4 className="font-bold text-lg">{project.title}</h4>
+                          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span className="font-medium text-primary/80">{project.role}</span>
+                            <span>•</span>
+                            <span>{project.year}</span>
+                          </div>
+                        </div>
+                        {project.contributionPct && (
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            Đóng góp: {project.contributionPct}%
+                          </Badge>
+                        )}
+                      </div>
+                      <p className="text-sm text-muted-foreground line-clamp-3">
+                        {project.summary}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         <div className="space-y-6">

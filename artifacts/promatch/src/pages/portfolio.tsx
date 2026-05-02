@@ -71,6 +71,8 @@ function StudentPortfolio({ userId }: { userId: string }) {
     }
   }, [portfolio]);
 
+  const [isUploading, setIsUploading] = useState(false);
+
   if (isLoading) {
     return <div className="flex items-center justify-center min-h-[50vh]"><Loader2 className="w-8 h-8 animate-spin text-primary" /></div>;
   }
@@ -120,8 +122,6 @@ function StudentPortfolio({ userId }: { userId: string }) {
   const removeSkill = (skillId: string) => {
     setFormData({ ...formData, skills: formData.skills.filter((s: any) => s.skillId !== skillId) });
   };
-
-  const [isUploading, setIsUploading] = useState(false);
 
   const handleAvatarChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
