@@ -87,6 +87,61 @@ router.patch("/session/password", async (req, res) => {
   res.json({ ok: true });
 });
 
+// Mock storage for verification codes (email -> code)
+const verificationCodes = new Map<string, string>();
+
+router.post("/session/forgot-password", async (req, res) => {
+  const { email } = req.body as { email?: string };
+  if (!email) { res.status(400).json({ error: "Vui lòng nhập email" }); return; }
+  const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+  if (!user) { res.status(404).json({ error: "Email không tồn tại trong hệ thống" }); return; }
+  
+  // Generate a random 6-digit code
+  const code = Math.floor(100000 + Math.random() * 900000).toString();
+  verificationCodes.set(email.trim().toLowerCase(), code);
+  
+  console.log(`[AUTH] Verification code for ${email}: ${code}`);
+  
+  // In a real app, send reset email here. For demo, we return the code in response for convenience
+  res.json({ ok: true, message: "Mã xác minh đã được gửi", code: code });
+});
+
+router.post("/session/verify-code", async (req, res) => {
+  const { email, code } = req.body as { email?: string, code?: string };
+  if (!email || !code) { res.status(400).json({ error: "Thiếu thông tin" }); return; }
+  
+  const storedCode = verificationCodes.get(email.trim().toLowerCase());
+  if (storedCode === code) {
+    res.json({ ok: true, message: "Mã xác minh chính xác" });
+  } else {
+    res.status(400).json({ error: "Mã xác minh không chính xác" });
+  }
+});
+
+router.post("/session/reset-password", async (req, res) => {
+  const { email, newPassword, code } = req.body as { email?: string, newPassword?: string, code?: string };
+  if (!email || !newPassword || !code) { res.status(400).json({ error: "Thiếu thông tin" }); return; }
+  
+  // Final verification check
+  const storedCode = verificationCodes.get(email.trim().toLowerCase());
+  if (storedCode !== code) {
+    res.status(401).json({ error: "Phiên làm việc đã hết hạn hoặc mã không đúng" });
+    return;
+  }
+
+  if (newPassword.trim().length < 6) { res.status(400).json({ error: "Mật khẩu mới phải có ít nhất 6 ký tự" }); return; }
+  
+  const user = await prisma.user.findUnique({ where: { email: email.trim().toLowerCase() } });
+  if (!user) { res.status(404).json({ error: "Người dùng không tồn tại" }); return; }
+  
+  await prisma.user.update({ where: { id: user.id }, data: { password: newPassword.trim() } });
+  
+  // Clear the code after successful reset
+  verificationCodes.delete(email.trim().toLowerCase());
+  
+  res.json({ ok: true, message: "Đổi mật khẩu thành công" });
+});
+
 router.put("/session/me", async (req, res) => {
   if (!req.session.userId) { res.status(401).json({ error: "Not authenticated" }); return; }
   const role = req.body?.role as string;
@@ -598,10 +653,28 @@ router.get("/teams/recommend", async (req, res) => {
 });
 
 // ===== Projects =====
-router.get("/projects", async (_req, res) => {
-  const items = await prisma.project.findMany({ orderBy: { createdAt: 'desc' } });
-  res.json(items);
+router.get("/projects", async (req, res) => {
+  const userId = req.session.userId;
+  if (!userId) {
+    res.status(401).json({ error: "Unauthorized" });
+    return;
+  }
+
+  // Filter projects where the user is a member
+  const projects = await prisma.project.findMany({
+    where: {
+      members: {
+        some: {
+          userId: userId
+        }
+      }
+    },
+    orderBy: { createdAt: 'desc' }
+  });
+  
+  res.json(projects);
 });
+
 
 router.post("/projects", async (req, res) => {
   const body = req.body || {};

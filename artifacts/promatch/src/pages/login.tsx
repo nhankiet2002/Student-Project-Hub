@@ -139,7 +139,7 @@ export default function LoginPage() {
             <button
               type="button"
               className="text-xs text-primary hover:underline"
-              onClick={() => {}}
+              onClick={() => setLocation("/forgot-password")}
             >
               Quên mật khẩu?
             </button>

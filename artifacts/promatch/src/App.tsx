@@ -35,6 +35,7 @@ import LandingPage from "@/pages/landing";
 import LoginPage from "@/pages/login";
 import RegisterPage from "@/pages/register";
 import EnterpriseApplications from "@/pages/enterprise-applications";
+import ForgotPasswordPage from "@/pages/forgot-password";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -100,6 +101,7 @@ function Router() {
       <Route path="/register">
         {loading ? null : user ? <Redirect to="/home" /> : <RegisterPage />}
       </Route>
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
       <Route>
         <ProtectedRoutes />
       </Route>
