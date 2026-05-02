@@ -10,10 +10,9 @@ import Home from "@/pages/home";
 import NotFound from "@/pages/not-found";
 import Portfolio from "@/pages/portfolio";
 import PortfolioPublic from "@/pages/portfolio-public";
-import Topics from "@/pages/topics";
-import TopicDetail from "@/pages/topic-detail";
 import TopicsRecommended from "@/pages/topics-recommended";
-import TopicsAI from "@/pages/topics-ai";
+import TopicDiscovery from "@/pages/topic-discovery";
+import TopicDetail from "@/pages/topic-detail";
 import Trends from "@/pages/trends";
 import Marketplace from "@/pages/marketplace";
 import MarketplaceDetail from "@/pages/marketplace-detail";
@@ -58,9 +57,8 @@ function ProtectedRoutes() {
         <Route path="/" component={Home} />
         <Route path="/portfolio" component={Portfolio} />
         <Route path="/portfolio/public/:userId" component={PortfolioPublic} />
-        <Route path="/topics" component={Topics} />
+        <Route path="/topics" component={TopicDiscovery} />
         <Route path="/topics/recommended" component={TopicsRecommended} />
-        <Route path="/topics/ai" component={TopicsAI} />
         <Route path="/topics/:topicId" component={TopicDetail} />
         <Route path="/trends" component={Trends} />
         <Route path="/marketplace" component={Marketplace} />

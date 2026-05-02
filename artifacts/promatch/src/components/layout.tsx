@@ -102,8 +102,7 @@ export function AppLayout({ children }: { children: React.ReactNode }) {
         return [
           { href: "/", label: "Bảng điều khiển", icon: LayoutDashboard },
           { href: "/topics/recommended", label: "Đề tài gợi ý", icon: Lightbulb },
-          { href: "/topics", label: "Khám phá đề tài", icon: Compass },
-          { href: "/topics/ai", label: "Sinh đề tài AI", icon: Sparkles },
+          { href: "/topics", label: "Khám phá đề tài", icon: Sparkles },
           { href: "/projects", label: "Dự án của tôi", icon: FolderKanban },
           { href: "/teams", label: "Tìm thành viên", icon: Users },
           { href: "/messages", label: "Tin nhắn", icon: MessageSquare, badge: totalMsgUnread },
